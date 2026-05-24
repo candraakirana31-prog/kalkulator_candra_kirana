@@ -1,612 +1,374 @@
-/**
- * CalcMaster Pro — script.js
- * Features: Standard, Arithmetic, Bitwise, Conversion, Factorial, Fibonacci
- * Themes: Light, Dark, Black Cat
- */
+/* ═══════════════════════════════════════════════════════════════
+   BLACK CAT CALCULATOR  ·  main.js
+═══════════════════════════════════════════════════════════════ */
 
 "use strict";
 
-/* ════════════════════════════════════════════
-   THEME MANAGEMENT
-   ════════════════════════════════════════════ */
-const THEMES = ["light", "dark", "black-cat"];
-let currentThemeIdx = 0;
-let catMode = false;
+/* ── History Store ─────────────────────────────────────────── */
+const history = [];
+let histCount = 0;
 
-const themeToggle = document.getElementById("themeToggle");
-const themeIcon = document.getElementById("themeIcon");
-const catToggle = document.getElementById("catToggle");
-const ICONS = { light: "☀", dark: "🌙", "black-cat": "✦" };
-
-function applyTheme(theme) {
-  document.documentElement.setAttribute("data-theme", theme);
-  themeIcon.textContent = ICONS[theme] || "☀";
-  localStorage.setItem("calcmaster-theme", theme);
+function addHistory(category, formula) {
+  history.unshift({ category, formula, time: new Date().toLocaleTimeString("id-ID") });
+  if (history.length > 50) history.pop();
+  renderHistory();
 }
 
-themeToggle.addEventListener("click", () => {
-  if (catMode) return;
-  currentThemeIdx = (currentThemeIdx + 1) % 2; // cycle light/dark only
-  applyTheme(THEMES[currentThemeIdx]);
-});
+function renderHistory() {
+  const list = document.getElementById("historyList");
+  const count = document.getElementById("hist-count");
+  count.textContent = history.length;
 
-catToggle.addEventListener("click", () => {
-  catMode = !catMode;
-  if (catMode) {
-    applyTheme("black-cat");
-    catToggle.style.background = "var(--accent)";
-  } else {
-    applyTheme(THEMES[currentThemeIdx]);
-    catToggle.style.background = "";
+  if (history.length === 0) {
+    list.innerHTML = '<li class="hist-empty">Belum ada riwayat perhitungan</li>';
+    return;
   }
+  list.innerHTML = history.map(h => `
+    <li class="hist-item">
+      <div class="hist-cat">${h.category}</div>
+      <div class="hist-formula">${escHtml(h.formula)}</div>
+      <div class="hist-meta">${h.time}</div>
+    </li>
+  `).join("");
+}
+
+document.getElementById("clearHistory").addEventListener("click", () => {
+  history.length = 0;
+  renderHistory();
 });
 
-// Restore saved theme
-(function () {
-  const saved = localStorage.getItem("calcmaster-theme");
-  if (saved === "black-cat") { catMode = true; catToggle.style.background = "var(--accent)"; }
-  if (saved === "dark") { currentThemeIdx = 1; }
-  applyTheme(saved || "light");
-})();
+/* ── Utils ─────────────────────────────────────────────────── */
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
 
-/* ════════════════════════════════════════════
-   MODE NAVIGATION
-   ════════════════════════════════════════════ */
-document.querySelectorAll(".mode-btn").forEach(btn => {
+function showResult(displayId, value, isError = false) {
+  const el = document.getElementById(displayId);
+  el.innerHTML = escHtml(String(value));
+  el.classList.remove("has-result", "error");
+  if (isError) el.classList.add("error");
+  else el.classList.add("has-result");
+}
+
+function showFormula(id, text) {
+  const el = document.getElementById(id);
+  if (!text) { el.classList.remove("show"); return; }
+  el.innerHTML = `<strong>Formula:</strong> ${escHtml(text)}`;
+  el.classList.add("show");
+}
+
+function showSteps(id, stepsArr) {
+  const el = document.getElementById(id);
+  if (!stepsArr || !stepsArr.length) { el.classList.remove("show"); return; }
+  el.innerHTML = `
+    <div class="steps-box-header">Langkah-langkah</div>
+    <ol>${stepsArr.map(s => `<li>${escHtml(s)}</li>`).join("")}</ol>
+  `;
+  el.classList.add("show");
+}
+
+async function apiPost(path, payload) {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return await res.json();
+}
+
+function setLoading(btn, on) {
+  if (on) btn.classList.add("loading");
+  else btn.classList.remove("loading");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   THEME TOGGLE
+══════════════════════════════════════════════════════════════ */
+const htmlEl = document.documentElement;
+const themeBtn = document.getElementById("themeToggle");
+
+const savedTheme = localStorage.getItem("bc-theme") || "dark";
+htmlEl.setAttribute("data-theme", savedTheme);
+
+themeBtn.addEventListener("click", () => {
+  const cur = htmlEl.getAttribute("data-theme");
+  const next = cur === "dark" ? "light" : "dark";
+  htmlEl.setAttribute("data-theme", next);
+  localStorage.setItem("bc-theme", next);
+});
+
+/* ══════════════════════════════════════════════════════════════
+   TAB SWITCHING
+══════════════════════════════════════════════════════════════ */
+document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".calc-panel").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
     btn.classList.add("active");
-    document.getElementById("panel-" + btn.dataset.mode).classList.add("active");
+    document.getElementById(`tab-${btn.dataset.tab}`).classList.add("active");
   });
 });
 
-/* ════════════════════════════════════════════
-   HELPERS
-   ════════════════════════════════════════════ */
-function formatNum(n) {
-  if (!isFinite(n)) return String(n);
-  if (Number.isInteger(n) && Math.abs(n) < 1e15) return n.toLocaleString("id-ID");
-  return parseFloat(n.toPrecision(12)).toString();
-}
-
-function setResult(elId, text, isError = false) {
-  const el = document.getElementById(elId);
-  el.textContent = text;
-  el.style.color = isError ? "#ff4d6d" : "";
-}
-
-function setSteps(elId, lines) {
-  const el = document.getElementById(elId);
-  el.innerHTML = "";
-  if (!lines || lines.length === 0) return;
-  lines.forEach(l => {
-    const div = document.createElement("div");
-    div.className = "step-line";
-    div.textContent = l;
-    el.appendChild(div);
+/* ══════════════════════════════════════════════════════════════
+   CONVERSION SUB-TABS
+══════════════════════════════════════════════════════════════ */
+document.querySelectorAll(".conv-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".conv-tab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".conv-panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(`conv-${btn.dataset.conv}`).classList.add("active");
   });
-}
+});
 
-/* ════════════════════════════════════════════
-   STANDARD CALCULATOR
-   ════════════════════════════════════════════ */
-const StdCalc = (() => {
-  let display = "0";
-  let expression = "";
-  let operator = null;
-  let prevValue = null;
-  let shouldReset = false;
+/* ══════════════════════════════════════════════════════════════
+   ARITHMETIC
+══════════════════════════════════════════════════════════════ */
+let arithOp = "add";
+const needsB = new Set(["add","sub","mul","div","pow","mod","floordiv"]);
 
-  const dMain = document.getElementById("std-display");
-  const dExpr = document.getElementById("std-expr");
-
-  function updateDisplay() {
-    const d = display.length > 10
-      ? parseFloat(display).toExponential(4)
-      : display;
-    dMain.textContent = d || "0";
-    if (dMain.textContent.length > 9) dMain.style.fontSize = "1.8rem";
-    else if (dMain.textContent.length > 7) dMain.style.fontSize = "2.2rem";
-    else dMain.style.fontSize = "";
-    dExpr.textContent = expression || "\u00a0";
-  }
-
-  function inputDigit(n) {
-    if (shouldReset) { display = String(n); shouldReset = false; }
-    else display = display === "0" ? String(n) : display + n;
-    updateDisplay();
-  }
-
-  function inputDot() {
-    if (shouldReset) { display = "0."; shouldReset = false; }
-    else if (!display.includes(".")) display += ".";
-    updateDisplay();
-  }
-
-  function clear() {
-    display = "0"; expression = ""; operator = null; prevValue = null; shouldReset = false;
-    updateDisplay();
-  }
-
-  function negate() {
-    display = String(parseFloat(display) * -1);
-    updateDisplay();
-  }
-
-  function percent() {
-    display = String(parseFloat(display) / 100);
-    updateDisplay();
-  }
-
-  function opMap(op) { return { "+": "+", "-": "−", "*": "×", "/": "÷" }[op] || op; }
-
-  function setOp(op) {
-    if (operator && !shouldReset) {
-      equals(true);
-    }
-    prevValue = parseFloat(display);
-    operator = op;
-    expression = `${prevValue} ${opMap(op)}`;
-    shouldReset = true;
-    updateDisplay();
-  }
-
-  function equals(chain = false) {
-    if (operator === null || prevValue === null) return;
-    const cur = parseFloat(display);
-    let res;
-    switch (operator) {
-      case "+": res = prevValue + cur; break;
-      case "-": res = prevValue - cur; break;
-      case "*": res = prevValue * cur; break;
-      case "/":
-        if (cur === 0) { display = "Error"; expression = "Pembagian oleh nol"; operator = null; prevValue = null; updateDisplay(); return; }
-        res = prevValue / cur;
-        break;
-      default: return;
-    }
-    if (!chain) {
-      expression = `${prevValue} ${opMap(operator)} ${cur} =`;
-    }
-    display = String(parseFloat(res.toPrecision(12)));
-    operator = null;
-    prevValue = null;
-    shouldReset = true;
-    updateDisplay();
-  }
-
-  // Button events
-  document.querySelectorAll("#panel-standard .key").forEach(key => {
-    key.addEventListener("click", () => {
-      const { num, action, op } = key.dataset;
-      if (num !== undefined) inputDigit(num);
-      else if (op) setOp(op);
-      else if (action === "clear") clear();
-      else if (action === "negate") negate();
-      else if (action === "percent") percent();
-      else if (action === "dot") inputDot();
-      else if (action === "equals") equals();
-    });
+document.querySelectorAll("#tab-arithmetic .op-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#tab-arithmetic .op-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    arithOp = btn.dataset.op;
+    const bGroup = document.getElementById("arith-b-group");
+    bGroup.style.display = needsB.has(arithOp) ? "block" : "none";
   });
+});
 
-  // Keyboard support
-  document.addEventListener("keydown", e => {
-    const mode = document.querySelector(".mode-btn.active")?.dataset.mode;
-    if (mode !== "standard") return;
-    if ("0123456789".includes(e.key)) inputDigit(e.key);
-    else if (e.key === ".") inputDot();
-    else if (e.key === "+") setOp("+");
-    else if (e.key === "-") setOp("-");
-    else if (e.key === "*") setOp("*");
-    else if (e.key === "/") { e.preventDefault(); setOp("/"); }
-    else if (e.key === "Enter" || e.key === "=") equals();
-    else if (e.key === "Escape" || e.key === "c" || e.key === "C") clear();
-    else if (e.key === "Backspace") {
-      if (display.length > 1) display = display.slice(0, -1);
-      else display = "0";
-      updateDisplay();
-    }
-  });
-})();
+document.getElementById("arith-calc").addEventListener("click", async () => {
+  const btn = document.getElementById("arith-calc");
+  const a = document.getElementById("arith-a").value;
+  const b = document.getElementById("arith-b").value;
 
-/* ════════════════════════════════════════════
-   ARITHMETIC CALCULATOR
-   ════════════════════════════════════════════ */
-(() => {
-  let selectedOp = "add";
+  if (a === "") { showResult("arith-result-display", "Masukkan nilai A!", true); return; }
+  if (needsB.has(arithOp) && b === "") { showResult("arith-result-display", "Masukkan nilai B!", true); return; }
 
-  const opButtons = document.querySelectorAll(".arith-op-btn");
-  const bGroup = document.getElementById("arith-b-group");
-  const aInput = document.getElementById("arith-a");
-  const bInput = document.getElementById("arith-b");
-
-  const singleOps = ["sqrt", "abs"];
-
-  opButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      opButtons.forEach(b => b.classList.remove("selected"));
-      btn.classList.add("selected");
-      selectedOp = btn.dataset.op;
-      bGroup.style.display = singleOps.includes(selectedOp) ? "none" : "flex";
-    });
-  });
-  opButtons[0].classList.add("selected");
-
-  document.getElementById("arith-calc").addEventListener("click", () => {
-    const a = parseFloat(aInput.value);
-    const b = parseFloat(bInput.value);
-    const steps = [];
-
-    if (isNaN(a)) { setResult("arith-result", "⚠ Masukkan nilai A yang valid!", true); return; }
-    if (!singleOps.includes(selectedOp) && isNaN(b)) { setResult("arith-result", "⚠ Masukkan nilai B yang valid!", true); return; }
-
-    let result, label;
-    switch (selectedOp) {
-      case "add":
-        result = a + b; label = `${a} + ${b}`;
-        steps.push(`Langkah: ${a} + ${b} = ${result}`);
-        break;
-      case "sub":
-        result = a - b; label = `${a} − ${b}`;
-        steps.push(`Langkah: ${a} − ${b} = ${result}`);
-        break;
-      case "mul":
-        result = a * b; label = `${a} × ${b}`;
-        steps.push(`Langkah: ${a} × ${b} = ${result}`);
-        break;
-      case "div":
-        if (b === 0) { setResult("arith-result", "⚠ Pembagian oleh nol tidak diperbolehkan!", true); return; }
-        result = a / b; label = `${a} ÷ ${b}`;
-        steps.push(`Langkah: ${a} ÷ ${b} = ${formatNum(result)}`);
-        if (Number.isInteger(a) && Number.isInteger(b)) {
-          steps.push(`Pembulatan: ${Math.floor(a / b)} sisa ${a % b}`);
-        }
-        break;
-      case "mod":
-        if (b === 0) { setResult("arith-result", "⚠ Modulo oleh nol tidak diperbolehkan!", true); return; }
-        result = a % b; label = `${a} mod ${b}`;
-        steps.push(`Langkah: ${a} mod ${b} = ${result}`);
-        steps.push(`Karena ${Math.floor(a / b)} × ${b} = ${Math.floor(a / b) * b}, sisa = ${result}`);
-        break;
-      case "pow":
-        result = Math.pow(a, b); label = `${a} ^ ${b}`;
-        steps.push(`Langkah: ${a}^${b} = ${formatNum(result)}`);
-        if (Number.isInteger(b) && b > 0 && b <= 5) {
-          steps.push(`Detail: ${Array(b).fill(a).join(" × ")} = ${result}`);
-        }
-        break;
-      case "sqrt":
-        if (a < 0) { setResult("arith-result", "⚠ Akar kuadrat dari bilangan negatif tidak valid!", true); return; }
-        result = Math.sqrt(a); label = `√${a}`;
-        steps.push(`√${a} = ${formatNum(result)}`);
-        steps.push(`Verifikasi: ${formatNum(result)} × ${formatNum(result)} ≈ ${formatNum(result * result)}`);
-        break;
-      case "abs":
-        result = Math.abs(a); label = `|${a}|`;
-        steps.push(`|${a}| = ${result}`);
-        steps.push(a >= 0 ? "Nilai sudah positif" : `Hapus tanda negatif dari ${a}`);
-        break;
-    }
-
-    document.getElementById("arith-display").textContent = formatNum(result);
-    document.getElementById("arith-expr").textContent = label + " =";
-    setResult("arith-result", `${label} = ${formatNum(result)}`);
-    setSteps("arith-steps", steps);
-  });
-})();
-
-/* ════════════════════════════════════════════
-   BITWISE CALCULATOR
-   ════════════════════════════════════════════ */
-(() => {
-  let selectedBop = "and";
-  const bitBtns = document.querySelectorAll(".bit-btn");
-  const aInput = document.getElementById("bit-a");
-  const bInput = document.getElementById("bit-b");
-  const bWrap = document.getElementById("bit-b-wrap");
-  const shiftWrap = document.getElementById("shift-amount-wrap");
-  const singleBops = ["not"];
-  const shiftBops = ["lshift", "rshift"];
-
-  bitBtns.forEach(btn => {
-    btn.addEventListener("click", () => {
-      bitBtns.forEach(b => b.classList.remove("selected"));
-      btn.classList.add("selected");
-      selectedBop = btn.dataset.bop;
-      bWrap.style.display = singleBops.includes(selectedBop) ? "none" : "flex";
-      shiftWrap.style.display = shiftBops.includes(selectedBop) ? "flex" : "none";
-    });
-  });
-  bitBtns[0].classList.add("selected");
-
-  function updateBinPreview(inputId, previewId) {
-    const v = parseInt(document.getElementById(inputId).value);
-    document.getElementById(previewId).textContent = isNaN(v) ? "—" : `${v} = 0b${(v >>> 0).toString(2)}`;
-  }
-
-  aInput.addEventListener("input", () => updateBinPreview("bit-a", "bit-a-bin"));
-  bInput.addEventListener("input", () => updateBinPreview("bit-b", "bit-b-bin"));
-
-  document.getElementById("bit-calc").addEventListener("click", () => {
-    const a = parseInt(aInput.value);
-    const b = parseInt(bInput.value);
-    const n = parseInt(document.getElementById("shift-n").value) || 1;
-
-    if (isNaN(a)) { setResult("bit-result", "⚠ Masukkan nilai A yang valid!", true); return; }
-    if (!singleBops.includes(selectedBop) && isNaN(b)) { setResult("bit-result", "⚠ Masukkan nilai B yang valid!", true); return; }
-
-    const binA = (a >>> 0).toString(2).padStart(8, "0");
-    const binB = isNaN(b) ? "" : (b >>> 0).toString(2).padStart(8, "0");
-    const steps = [];
-    steps.push(`A = ${a}  →  0b${binA}`);
-    if (!singleBops.includes(selectedBop)) steps.push(`B = ${b}  →  0b${binB}`);
-
-    let result, label;
-    switch (selectedBop) {
-      case "and": result = a & b; label = `${a} AND ${b}`;
-        steps.push(`Operasi AND bit per bit:`);
-        steps.push(`  ${binA}`);
-        steps.push(`& ${binB}`);
-        steps.push(`= ${(result >>> 0).toString(2).padStart(8, "0")}`);
-        break;
-      case "or": result = a | b; label = `${a} OR ${b}`;
-        steps.push(`Operasi OR bit per bit:`);
-        steps.push(`  ${binA}`);
-        steps.push(`| ${binB}`);
-        steps.push(`= ${(result >>> 0).toString(2).padStart(8, "0")}`);
-        break;
-      case "xor": result = a ^ b; label = `${a} XOR ${b}`;
-        steps.push(`Operasi XOR bit per bit:`);
-        steps.push(`  ${binA}`);
-        steps.push(`^ ${binB}`);
-        steps.push(`= ${(result >>> 0).toString(2).padStart(8, "0")}`);
-        break;
-      case "not": result = ~a; label = `NOT ${a}`;
-        steps.push(`NOT A: flip semua bit`);
-        steps.push(`  ${binA}  →  ${(result >>> 0).toString(2).padStart(8, "0")}`);
-        break;
-      case "lshift": result = a << n; label = `${a} << ${n}`;
-        steps.push(`Geser ${binA} ke kiri ${n} posisi`);
-        steps.push(`Hasil: ${(result >>> 0).toString(2).padStart(8, "0")}`);
-        steps.push(`Sama dengan: ${a} × 2^${n} = ${a} × ${Math.pow(2, n)} = ${result}`);
-        break;
-      case "rshift": result = a >> n; label = `${a} >> ${n}`;
-        steps.push(`Geser ${binA} ke kanan ${n} posisi`);
-        steps.push(`Hasil: ${(result >>> 0).toString(2).padStart(8, "0")}`);
-        steps.push(`Sama dengan: floor(${a} / 2^${n}) = floor(${a / Math.pow(2, n)}) = ${result}`);
-        break;
-    }
-
-    steps.push(`Hasil desimal: ${result}`);
-    steps.push(`Hasil hex: 0x${(result >>> 0).toString(16).toUpperCase()}`);
-    setResult("bit-result", `${label} = ${result}  (0b${(result >>> 0).toString(2)}, 0x${(result >>> 0).toString(16).toUpperCase()})`);
-    setSteps("bit-steps", steps);
-  });
-})();
-
-/* ════════════════════════════════════════════
-   CONVERSION CALCULATOR
-   ════════════════════════════════════════════ */
-(() => {
-  // Tabs
-  document.querySelectorAll(".conv-tab").forEach(tab => {
-    tab.addEventListener("click", () => {
-      document.querySelectorAll(".conv-tab").forEach(t => t.classList.remove("active"));
-      document.querySelectorAll(".conv-panel").forEach(p => p.classList.remove("active"));
-      tab.classList.add("active");
-      document.getElementById("conv-" + tab.dataset.conv).classList.add("active");
-    });
-  });
-
-  // Number system
-  document.getElementById("conv-num-btn").addEventListener("click", () => {
-    const val = document.getElementById("conv-num-val").value.trim();
-    const from = parseInt(document.getElementById("conv-num-from").value);
-    const to = parseInt(document.getElementById("conv-num-to").value);
-    if (!val) { setResult("conv-num-result", "⚠ Masukkan nilai!", true); return; }
-    const dec = parseInt(val, from);
-    if (isNaN(dec)) { setResult("conv-num-result", "⚠ Nilai tidak valid untuk basis tersebut!", true); return; }
-    const result = dec.toString(to).toUpperCase();
-    const baseNames = { 2: "Biner", 8: "Oktal", 10: "Desimal", 16: "Heksadesimal" };
-    const steps = [
-      `Input: ${val} (basis ${from} / ${baseNames[from]})`,
-      `Konversi ke desimal: ${dec}`,
-      `Konversi desimal ke basis ${to}: ${result}`,
-    ];
-    if (from !== 10) steps.push(`Verifikasi: ${val}(${from}) = ${dec}(10) = ${result}(${to})`);
-    setResult("conv-num-result", `${val} (basis ${from}) = ${result} (basis ${to})`);
-    setSteps("conv-num-steps", steps);
-  });
-
-  // Temperature
-  const tempToC = { C: v => v, F: v => (v - 32) * 5 / 9, K: v => v - 273.15, R: v => (v - 491.67) * 5 / 9 };
-  const tempFromC = { C: v => v, F: v => v * 9 / 5 + 32, K: v => v + 273.15, R: v => (v + 273.15) * 9 / 5 };
-  const tempNames = { C: "Celsius", F: "Fahrenheit", K: "Kelvin", R: "Rankine" };
-  const tempSymbols = { C: "°C", F: "°F", K: "K", R: "°R" };
-
-  document.getElementById("conv-temp-btn").addEventListener("click", () => {
-    const val = parseFloat(document.getElementById("conv-temp-val").value);
-    const from = document.getElementById("conv-temp-from").value;
-    const to = document.getElementById("conv-temp-to").value;
-    if (isNaN(val)) { setResult("conv-temp-result", "⚠ Masukkan nilai suhu yang valid!", true); return; }
-    const celsius = tempToC[from](val);
-    const result = tempFromC[to](celsius);
-    const steps = [
-      `Input: ${val}${tempSymbols[from]} (${tempNames[from]})`,
-      `Konversi ke Celsius: ${formatNum(celsius)}°C`,
-      `Konversi ke ${tempNames[to]}: ${formatNum(result)}${tempSymbols[to]}`,
-    ];
-    setResult("conv-temp-result", `${val}${tempSymbols[from]} = ${formatNum(result)}${tempSymbols[to]}`);
-    setSteps("conv-temp-steps", steps);
-  });
-
-  // Length
-  const lenToM = { mm: 0.001, cm: 0.01, m: 1, km: 1000, in: 0.0254, ft: 0.3048, yd: 0.9144, mi: 1609.344 };
-  const lenNames = { mm: "Milimeter", cm: "Sentimeter", m: "Meter", km: "Kilometer", in: "Inci", ft: "Kaki", yd: "Yard", mi: "Mil" };
-
-  document.getElementById("conv-len-btn").addEventListener("click", () => {
-    const val = parseFloat(document.getElementById("conv-len-val").value);
-    const from = document.getElementById("conv-len-from").value;
-    const to = document.getElementById("conv-len-to").value;
-    if (isNaN(val)) { setResult("conv-len-result", "⚠ Masukkan nilai panjang yang valid!", true); return; }
-    const meters = val * lenToM[from];
-    const result = meters / lenToM[to];
-    const steps = [
-      `Input: ${val} ${from} (${lenNames[from]})`,
-      `Konversi ke meter: ${formatNum(meters)} m`,
-      `Konversi ke ${lenNames[to]}: ${formatNum(result)} ${to}`,
-    ];
-    setResult("conv-len-result", `${val} ${from} = ${formatNum(result)} ${to}`);
-    setSteps("conv-len-steps", steps);
-  });
-
-  // Weight
-  const wtToKg = { mg: 1e-6, g: 0.001, kg: 1, ton: 1000, oz: 0.0283495, lb: 0.453592 };
-  const wtNames = { mg: "Miligram", g: "Gram", kg: "Kilogram", ton: "Ton", oz: "Ons", lb: "Pon" };
-
-  document.getElementById("conv-wt-btn").addEventListener("click", () => {
-    const val = parseFloat(document.getElementById("conv-wt-val").value);
-    const from = document.getElementById("conv-wt-from").value;
-    const to = document.getElementById("conv-wt-to").value;
-    if (isNaN(val)) { setResult("conv-wt-result", "⚠ Masukkan nilai berat yang valid!", true); return; }
-    const kg = val * wtToKg[from];
-    const result = kg / wtToKg[to];
-    const steps = [
-      `Input: ${val} ${from} (${wtNames[from]})`,
-      `Konversi ke kilogram: ${formatNum(kg)} kg`,
-      `Konversi ke ${wtNames[to]}: ${formatNum(result)} ${to}`,
-    ];
-    setResult("conv-wt-result", `${val} ${from} = ${formatNum(result)} ${to}`);
-    setSteps("conv-wt-steps", steps);
-  });
-})();
-
-/* ════════════════════════════════════════════
-   FACTORIAL CALCULATOR
-   ════════════════════════════════════════════ */
-(() => {
-  function factorial(n) {
-    if (n === 0 || n === 1) return 1n;
-    let r = 1n;
-    for (let i = 2n; i <= BigInt(n); i++) r *= i;
-    return r;
-  }
-
-  // Build table
-  const table = document.getElementById("fact-table");
-  for (let i = 0; i <= 15; i++) {
-    const row = document.createElement("div");
-    row.className = "fact-row";
-    const h = document.createElement("div");
-    h.className = "fact-cell fact-cell-head";
-    h.textContent = `${i}!`;
-    const v = document.createElement("div");
-    v.className = "fact-cell fact-cell-val";
-    v.textContent = factorial(i).toString();
-    row.appendChild(h);
-    row.appendChild(v);
-    table.appendChild(row);
-  }
-
-  document.getElementById("fact-calc").addEventListener("click", () => {
-    const n = parseInt(document.getElementById("fact-n").value);
-    if (isNaN(n) || n < 0) { setResult("fact-result", "⚠ Masukkan bilangan bulat ≥ 0!", true); return; }
-    if (n > 170) { setResult("fact-result", "⚠ Nilai terlalu besar (maks 170)!", true); return; }
-
-    const result = factorial(n);
-    const steps = [`${n}! = `];
-
-    if (n <= 10) {
-      const parts = [];
-      for (let i = n; i >= 1; i--) parts.push(i);
-      steps.push(parts.join(" × ") + (n === 0 ? "1" : ""));
-      steps.push(`= ${result.toString()}`);
+  setLoading(btn, true);
+  try {
+    const data = await apiPost("/api/arithmetic", { a, b: needsB.has(arithOp) ? b : null, op: arithOp });
+    setLoading(btn, false);
+    if (data.error) {
+      showResult("arith-result-display", data.error, true);
     } else {
-      steps.push(`${n} × ${n - 1} × ${n - 2} × ... × 2 × 1`);
-      steps.push(`= ${result.toString()}`);
-      steps.push(`Jumlah digit: ${result.toString().length}`);
+      showResult("arith-result-display", data.result);
+      showFormula("arith-formula", data.formula);
+      showSteps("arith-steps", data.steps);
+      addHistory("Aritmatika", data.formula);
     }
+  } catch (e) {
+    setLoading(btn, false);
+    showResult("arith-result-display", "Terjadi kesalahan.", true);
+  }
+});
 
-    setResult("fact-result", `${n}! = ${result.toLocaleString()}`);
-    setSteps("fact-steps", steps);
+/* Enter key shortcut */
+["arith-a","arith-b"].forEach(id => {
+  document.getElementById(id).addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("arith-calc").click();
   });
-})();
+});
 
-/* ════════════════════════════════════════════
-   FIBONACCI CALCULATOR
-   ════════════════════════════════════════════ */
-(() => {
-  function fibN(n) {
-    if (n <= 0) return 0n;
-    if (n === 1) return 1n;
-    let a = 0n, b = 1n;
-    for (let i = 2; i <= n; i++) { let t = a + b; a = b; b = t; }
-    return b;
-  }
+/* ══════════════════════════════════════════════════════════════
+   LOGIC / BITWISE
+══════════════════════════════════════════════════════════════ */
+let logicOp = "and";
+const logicNoB = new Set(["not"]);
 
-  function fibSeq(n) {
-    const seq = [0n, 1n];
-    for (let i = 2; i <= n; i++) seq.push(seq[i - 1] + seq[i - 2]);
-    return seq.slice(0, n + 1);
-  }
+document.querySelectorAll("#tab-logic .op-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#tab-logic .op-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    logicOp = btn.dataset.op;
+    const bGroup = document.getElementById("logic-b-group");
+    bGroup.style.display = logicNoB.has(logicOp) ? "none" : "block";
+  });
+});
 
-  document.getElementById("fib-single").addEventListener("click", () => {
-    const n = parseInt(document.getElementById("fib-n").value);
-    if (isNaN(n) || n < 0) { setResult("fib-result", "⚠ Masukkan bilangan bulat ≥ 0!", true); return; }
-    if (n > 1000) { setResult("fib-result", "⚠ Nilai terlalu besar (maks 1000)!", true); return; }
+document.getElementById("logic-calc").addEventListener("click", async () => {
+  const btn = document.getElementById("logic-calc");
+  const a = document.getElementById("logic-a").value;
+  const b = document.getElementById("logic-b").value;
 
-    const result = fibN(n);
-    const steps = [];
-    if (n <= 2) {
-      steps.push(`Definisi dasar: F(${n}) = ${result}`);
+  if (a === "") { showResult("logic-result-display", "Masukkan nilai A!", true); return; }
+  if (!logicNoB.has(logicOp) && b === "") { showResult("logic-result-display", "Masukkan nilai B!", true); return; }
+
+  setLoading(btn, true);
+  try {
+    const data = await apiPost("/api/logic", { a, b: logicNoB.has(logicOp) ? null : b, op: logicOp });
+    setLoading(btn, false);
+    if (data.error) {
+      showResult("logic-result-display", data.error, true);
     } else {
-      const fn1 = fibN(n - 1);
-      const fn2 = fibN(n - 2);
-      steps.push(`F(${n}) = F(${n - 1}) + F(${n - 2})`);
-      steps.push(`F(${n}) = ${fn1} + ${fn2}`);
-      steps.push(`F(${n}) = ${result}`);
+      showResult("logic-result-display", data.result);
+      showFormula("logic-formula", data.formula);
+      showSteps("logic-steps", data.steps);
+      addHistory("Logika/Bitwise", data.formula);
     }
+  } catch (e) {
+    setLoading(btn, false);
+    showResult("logic-result-display", "Terjadi kesalahan.", true);
+  }
+});
 
-    setResult("fib-result", `F(${n}) = ${result.toString()}`);
-    setSteps("fib-steps", steps);
+/* ══════════════════════════════════════════════════════════════
+   BASE CONVERSION
+══════════════════════════════════════════════════════════════ */
+document.getElementById("base-calc").addEventListener("click", async () => {
+  const btn = document.getElementById("base-calc");
+  const number = document.getElementById("base-number").value;
+  const from_base = document.getElementById("base-from").value;
+  const to_base = document.getElementById("base-to").value;
 
-    // Visual: show small sequence
-    const visual = document.getElementById("fib-visual");
-    visual.innerHTML = "";
-    const upTo = Math.min(n, 20);
-    const seq = fibSeq(upTo);
-    seq.forEach((val, i) => {
-      const chip = document.createElement("span");
-      chip.className = "fib-chip" + (i === n ? " highlight" : "");
-      chip.textContent = `F(${i})=${val}`;
-      visual.appendChild(chip);
-    });
-    if (n > 20) {
-      const chip = document.createElement("span");
-      chip.className = "fib-chip highlight";
-      chip.textContent = `... F(${n})=${result}`;
-      visual.appendChild(chip);
+  if (!number) { showResult("base-result-display", "Masukkan angka!", true); return; }
+
+  setLoading(btn, true);
+  try {
+    const data = await apiPost("/api/convert/base", { number, from_base, to_base });
+    setLoading(btn, false);
+    if (data.error) {
+      showResult("base-result-display", data.error, true);
+    } else {
+      showResult("base-result-display", data.result);
+      showFormula("base-formula", data.formula);
+      showSteps("base-steps", data.steps);
+      addHistory("Konversi Basis", data.formula);
     }
-  });
+  } catch (e) {
+    setLoading(btn, false);
+    showResult("base-result-display", "Terjadi kesalahan.", true);
+  }
+});
 
-  document.getElementById("fib-sequence").addEventListener("click", () => {
-    const n = parseInt(document.getElementById("fib-seq").value);
-    if (isNaN(n) || n < 1) { setResult("fib-result", "⚠ Masukkan angka ≥ 1!", true); return; }
-    if (n > 100) { setResult("fib-result", "⚠ Maks 100 suku!", true); return; }
+/* ══════════════════════════════════════════════════════════════
+   TEMPERATURE CONVERSION
+══════════════════════════════════════════════════════════════ */
+document.getElementById("temp-calc").addEventListener("click", async () => {
+  const btn = document.getElementById("temp-calc");
+  const value = document.getElementById("temp-value").value;
+  const from_unit = document.getElementById("temp-from").value;
+  const to_unit = document.getElementById("temp-to").value;
 
-    const seq = fibSeq(n);
-    const steps = seq.map((v, i) => `F(${i}) = ${v.toString()}`);
-    setResult("fib-result", `Barisan Fibonacci 0 sampai ${n}: ${seq.map(v => v.toString()).join(", ")}`);
-    setSteps("fib-steps", steps);
+  if (value === "") { showResult("temp-result-display", "Masukkan nilai suhu!", true); return; }
 
-    const visual = document.getElementById("fib-visual");
-    visual.innerHTML = "";
-    seq.forEach((val, i) => {
-      const chip = document.createElement("span");
-      chip.className = "fib-chip";
-      chip.textContent = `F(${i})=${val}`;
-      visual.appendChild(chip);
-    });
-  });
-})();
+  setLoading(btn, true);
+  try {
+    const data = await apiPost("/api/convert/temperature", { value, from_unit, to_unit });
+    setLoading(btn, false);
+    if (data.error) {
+      showResult("temp-result-display", data.error, true);
+    } else {
+      showResult("temp-result-display", data.result + "°");
+      showFormula("temp-formula", data.formula);
+      showSteps("temp-steps", data.steps);
+      addHistory("Konversi Suhu", data.formula);
+    }
+  } catch (e) {
+    setLoading(btn, false);
+    showResult("temp-result-display", "Terjadi kesalahan.", true);
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   CURRENCY CONVERSION
+══════════════════════════════════════════════════════════════ */
+document.getElementById("cur-calc").addEventListener("click", async () => {
+  const btn = document.getElementById("cur-calc");
+  const value = document.getElementById("cur-value").value;
+  const from_currency = document.getElementById("cur-from").value;
+  const to_currency = document.getElementById("cur-to").value;
+
+  if (value === "") { showResult("cur-result-display", "Masukkan jumlah!", true); return; }
+
+  setLoading(btn, true);
+  try {
+    const data = await apiPost("/api/convert/currency", { value, from_currency, to_currency });
+    setLoading(btn, false);
+    if (data.error) {
+      showResult("cur-result-display", data.error, true);
+    } else {
+      showResult("cur-result-display", data.result.toLocaleString("id-ID", { maximumFractionDigits: 6 }));
+      showFormula("cur-formula", data.formula);
+      showSteps("cur-steps", data.steps);
+      addHistory("Konversi Mata Uang", data.formula);
+    }
+  } catch (e) {
+    setLoading(btn, false);
+    showResult("cur-result-display", "Terjadi kesalahan.", true);
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   FACTORIAL
+══════════════════════════════════════════════════════════════ */
+document.getElementById("fact-calc").addEventListener("click", async () => {
+  const btn = document.getElementById("fact-calc");
+  const n = document.getElementById("fact-n").value;
+
+  if (n === "") { showResult("fact-result-display", "Masukkan nilai n!", true); return; }
+
+  setLoading(btn, true);
+  try {
+    const data = await apiPost("/api/factorial", { n });
+    setLoading(btn, false);
+    if (data.error) {
+      showResult("fact-result-display", data.error, true);
+    } else {
+      // Large numbers displayed with notation
+      const res = BigInt(data.result).toLocaleString("id-ID");
+      showResult("fact-result-display", data.result > 1e15 ? `${n}! = (besar)` : res);
+      showFormula("fact-formula", data.formula);
+      showSteps("fact-steps", data.steps);
+      addHistory("Faktorial", `${n}! = ${data.result}`);
+    }
+  } catch (e) {
+    setLoading(btn, false);
+    showResult("fact-result-display", "Terjadi kesalahan.", true);
+  }
+});
+
+document.getElementById("fact-n").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("fact-calc").click();
+});
+
+/* ══════════════════════════════════════════════════════════════
+   FIBONACCI
+══════════════════════════════════════════════════════════════ */
+document.getElementById("fib-calc").addEventListener("click", async () => {
+  const btn = document.getElementById("fib-calc");
+  const n = document.getElementById("fib-n").value;
+
+  if (n === "") { showResult("fib-result-display", "Masukkan nilai n!", true); return; }
+
+  setLoading(btn, true);
+  try {
+    const data = await apiPost("/api/fibonacci", { n });
+    setLoading(btn, false);
+    if (data.error) {
+      showResult("fib-result-display", data.error, true);
+    } else {
+      showResult("fib-result-display", `F(${parseInt(n)-1}) = ${data.result}`);
+      showFormula("fib-formula", data.formula);
+      showSteps("fib-steps", data.steps);
+
+      // Render badges
+      const seqEl = document.getElementById("fib-sequence");
+      seqEl.innerHTML = data.sequence
+        .map((v, i) => `<span class="fib-badge" style="animation-delay:${i*18}ms">${v}</span>`)
+        .join("");
+
+      addHistory("Fibonacci", `${n} suku pertama, F(${parseInt(n)-1})=${data.result}`);
+    }
+  } catch (e) {
+    setLoading(btn, false);
+    showResult("fib-result-display", "Terjadi kesalahan.", true);
+  }
+});
+
+document.getElementById("fib-n").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("fib-calc").click();
+});
