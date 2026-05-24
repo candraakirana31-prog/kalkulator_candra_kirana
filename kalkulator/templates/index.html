@@ -1,357 +1,309 @@
 <!DOCTYPE html>
-<html lang="id" data-theme="light">
+<html lang="id" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CalcMaster Pro — Kalkulator Lengkap</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Black Cat Calculator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body>
-  <!-- HEADER -->
-  <header class="header">
-    <div class="header-left">
-      <div class="logo">
-        <span class="logo-icon">⬡</span>
-        <span class="logo-text">CalcMaster<span class="logo-accent">Pro</span></span>
-      </div>
+
+  <!-- ── Header ─────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="logo">
+      <span class="cat-icon">𝄞</span>
+      <span class="logo-text">BLACK<em>CAT</em></span>
+      <span class="logo-sub">Calculator</span>
     </div>
-    <div class="header-right">
-      <button class="theme-btn" id="themeToggle" title="Toggle Theme">
-        <span class="theme-icon" id="themeIcon">☀</span>
-      </button>
-      <div class="cat-toggle" id="catToggle" title="Black Cat Mode">
-        <span>🐱</span>
-      </div>
-    </div>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+      <span class="icon-sun">☀</span>
+      <span class="icon-moon">☽</span>
+    </button>
   </header>
 
-  <!-- MODE TABS -->
-  <nav class="mode-nav">
-    <button class="mode-btn active" data-mode="standard">Standard</button>
-    <button class="mode-btn" data-mode="arithmetic">Aritmatika</button>
-    <button class="mode-btn" data-mode="bitwise">Bitwise</button>
-    <button class="mode-btn" data-mode="conversion">Konversi</button>
-    <button class="mode-btn" data-mode="factorial">Faktorial</button>
-    <button class="mode-btn" data-mode="fibonacci">Fibonacci</button>
+  <!-- ── Tab Navigation ─────────────────────────────────── -->
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="arithmetic">Aritmatika</button>
+    <button class="tab-btn" data-tab="logic">Logika / Bitwise</button>
+    <button class="tab-btn" data-tab="convert">Konversi</button>
+    <button class="tab-btn" data-tab="fibonacci">Faktorial &amp; Fibonacci</button>
   </nav>
 
-  <!-- MAIN CONTENT -->
-  <main class="main">
+  <main class="main-layout">
 
-    <!-- ===== STANDARD CALCULATOR ===== -->
-    <section class="calc-panel active" id="panel-standard">
-      <div class="calc-card">
-        <div class="display-wrap">
-          <div class="display-expr" id="std-expr">&nbsp;</div>
-          <div class="display-main" id="std-display">0</div>
-        </div>
-        <div class="keypad">
-          <button class="key key-fn" data-action="clear">AC</button>
-          <button class="key key-fn" data-action="negate">±</button>
-          <button class="key key-fn" data-action="percent">%</button>
-          <button class="key key-op" data-op="/">÷</button>
+    <!-- ════════════════════════════════════════════════════
+         TAB: ARITMATIKA
+    ═══════════════════════════════════════════════════════ -->
+    <section class="tab-panel active" id="tab-arithmetic">
+      <div class="panel-grid">
+        <div class="card input-card">
+          <h2 class="card-title"><span class="num">01</span> Operasi Aritmatika</h2>
 
-          <button class="key" data-num="7">7</button>
-          <button class="key" data-num="8">8</button>
-          <button class="key" data-num="9">9</button>
-          <button class="key key-op" data-op="*">×</button>
-
-          <button class="key" data-num="4">4</button>
-          <button class="key" data-num="5">5</button>
-          <button class="key" data-num="6">6</button>
-          <button class="key key-op" data-op="-">−</button>
-
-          <button class="key" data-num="1">1</button>
-          <button class="key" data-num="2">2</button>
-          <button class="key" data-num="3">3</button>
-          <button class="key key-op" data-op="+">+</button>
-
-          <button class="key key-wide" data-num="0">0</button>
-          <button class="key" data-action="dot">.</button>
-          <button class="key key-eq" data-action="equals">=</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== ARITHMETIC ===== -->
-    <section class="calc-panel" id="panel-arithmetic">
-      <div class="calc-card arith-card">
-        <h2 class="panel-title">Kalkulator Aritmatika</h2>
-        <div class="display-wrap">
-          <div class="display-expr" id="arith-expr">&nbsp;</div>
-          <div class="display-main" id="arith-display">0</div>
-        </div>
-        <div class="arith-ops">
-          <button class="arith-op-btn" data-op="add">Penjumlahan (+)</button>
-          <button class="arith-op-btn" data-op="sub">Pengurangan (−)</button>
-          <button class="arith-op-btn" data-op="mul">Perkalian (×)</button>
-          <button class="arith-op-btn" data-op="div">Pembagian (÷)</button>
-          <button class="arith-op-btn" data-op="mod">Modulo (%)</button>
-          <button class="arith-op-btn" data-op="pow">Pangkat (^)</button>
-          <button class="arith-op-btn" data-op="sqrt">Akar Kuadrat (√)</button>
-          <button class="arith-op-btn" data-op="abs">Nilai Mutlak |x|</button>
-        </div>
-        <div class="arith-inputs" id="arith-inputs">
-          <div class="input-group">
-            <label>Angka A</label>
+          <div class="form-group">
+            <label>Operand A</label>
             <input type="number" id="arith-a" placeholder="Masukkan angka..." />
           </div>
-          <div class="input-group" id="arith-b-group">
-            <label>Angka B</label>
+
+          <div class="op-grid">
+            <button class="op-btn active" data-op="add">+</button>
+            <button class="op-btn" data-op="sub">−</button>
+            <button class="op-btn" data-op="mul">×</button>
+            <button class="op-btn" data-op="div">÷</button>
+            <button class="op-btn" data-op="pow">xⁿ</button>
+            <button class="op-btn" data-op="sqrt">√x</button>
+            <button class="op-btn" data-op="mod">mod</button>
+            <button class="op-btn" data-op="floordiv">//</button>
+          </div>
+
+          <div class="form-group" id="arith-b-group">
+            <label>Operand B</label>
             <input type="number" id="arith-b" placeholder="Masukkan angka..." />
           </div>
-        </div>
-        <button class="calc-submit" id="arith-calc">Hitung</button>
-        <div class="result-box" id="arith-result">Hasil akan tampil di sini</div>
-        <div class="steps-box" id="arith-steps"></div>
-      </div>
-    </section>
 
-    <!-- ===== BITWISE ===== -->
-    <section class="calc-panel" id="panel-bitwise">
-      <div class="calc-card">
-        <h2 class="panel-title">Kalkulator Bitwise</h2>
-        <div class="bit-grid">
-          <div class="input-group">
-            <label>Nilai A (desimal)</label>
-            <input type="number" id="bit-a" placeholder="contoh: 12" step="1" />
-            <div class="bit-preview" id="bit-a-bin">—</div>
-          </div>
-          <div class="input-group" id="bit-b-wrap">
-            <label>Nilai B (desimal)</label>
-            <input type="number" id="bit-b" placeholder="contoh: 10" step="1" />
-            <div class="bit-preview" id="bit-b-bin">—</div>
-          </div>
-        </div>
-        <div class="bit-ops">
-          <button class="bit-btn" data-bop="and">AND (&amp;)</button>
-          <button class="bit-btn" data-bop="or">OR (|)</button>
-          <button class="bit-btn" data-bop="xor">XOR (^)</button>
-          <button class="bit-btn" data-bop="not">NOT (~A)</button>
-          <button class="bit-btn" data-bop="lshift">Left Shift (&lt;&lt;)</button>
-          <button class="bit-btn" data-bop="rshift">Right Shift (&gt;&gt;)</button>
-        </div>
-        <div class="shift-amount" id="shift-amount-wrap" style="display:none">
-          <label>Jumlah Shift</label>
-          <input type="number" id="shift-n" value="1" min="0" max="31" />
-        </div>
-        <button class="calc-submit" id="bit-calc">Hitung</button>
-        <div class="result-box" id="bit-result">Hasil akan tampil di sini</div>
-        <div class="steps-box" id="bit-steps"></div>
-      </div>
-    </section>
-
-    <!-- ===== CONVERSION ===== -->
-    <section class="calc-panel" id="panel-conversion">
-      <div class="calc-card">
-        <h2 class="panel-title">Kalkulator Konversi</h2>
-        <div class="conv-tabs">
-          <button class="conv-tab active" data-conv="number">Sistem Bilangan</button>
-          <button class="conv-tab" data-conv="temp">Suhu</button>
-          <button class="conv-tab" data-conv="length">Panjang</button>
-          <button class="conv-tab" data-conv="weight">Berat</button>
+          <button class="calc-btn" id="arith-calc">Hitung →</button>
         </div>
 
-        <!-- Number System -->
-        <div class="conv-panel active" id="conv-number">
-          <div class="input-group">
-            <label>Nilai Input</label>
-            <input type="text" id="conv-num-val" placeholder="Masukkan nilai..." />
+        <div class="card result-card">
+          <div class="result-display" id="arith-result-display">
+            <span class="result-placeholder">Hasil muncul di sini</span>
           </div>
-          <div class="conv-row">
-            <div class="input-group">
-              <label>Dari</label>
-              <select id="conv-num-from">
-                <option value="2">Biner (2)</option>
-                <option value="8">Oktal (8)</option>
-                <option value="10" selected>Desimal (10)</option>
-                <option value="16">Heksadesimal (16)</option>
-              </select>
-            </div>
-            <div class="arrow-icon">→</div>
-            <div class="input-group">
-              <label>Ke</label>
-              <select id="conv-num-to">
-                <option value="2" selected>Biner (2)</option>
-                <option value="8">Oktal (8)</option>
-                <option value="10">Desimal (10)</option>
-                <option value="16">Heksadesimal (16)</option>
-              </select>
-            </div>
-          </div>
-          <button class="calc-submit" id="conv-num-btn">Konversi</button>
-          <div class="result-box" id="conv-num-result">Hasil akan tampil di sini</div>
-          <div class="steps-box" id="conv-num-steps"></div>
-        </div>
-
-        <!-- Temperature -->
-        <div class="conv-panel" id="conv-temp">
-          <div class="input-group">
-            <label>Nilai Suhu</label>
-            <input type="number" id="conv-temp-val" placeholder="Masukkan suhu..." />
-          </div>
-          <div class="conv-row">
-            <div class="input-group">
-              <label>Dari</label>
-              <select id="conv-temp-from">
-                <option value="C">Celsius (°C)</option>
-                <option value="F">Fahrenheit (°F)</option>
-                <option value="K">Kelvin (K)</option>
-                <option value="R">Rankine (°R)</option>
-              </select>
-            </div>
-            <div class="arrow-icon">→</div>
-            <div class="input-group">
-              <label>Ke</label>
-              <select id="conv-temp-to">
-                <option value="C">Celsius (°C)</option>
-                <option value="F" selected>Fahrenheit (°F)</option>
-                <option value="K">Kelvin (K)</option>
-                <option value="R">Rankine (°R)</option>
-              </select>
-            </div>
-          </div>
-          <button class="calc-submit" id="conv-temp-btn">Konversi</button>
-          <div class="result-box" id="conv-temp-result">Hasil akan tampil di sini</div>
-          <div class="steps-box" id="conv-temp-steps"></div>
-        </div>
-
-        <!-- Length -->
-        <div class="conv-panel" id="conv-length">
-          <div class="input-group">
-            <label>Nilai Panjang</label>
-            <input type="number" id="conv-len-val" placeholder="Masukkan nilai..." />
-          </div>
-          <div class="conv-row">
-            <div class="input-group">
-              <label>Dari</label>
-              <select id="conv-len-from">
-                <option value="mm">Milimeter (mm)</option>
-                <option value="cm">Sentimeter (cm)</option>
-                <option value="m" selected>Meter (m)</option>
-                <option value="km">Kilometer (km)</option>
-                <option value="in">Inci (in)</option>
-                <option value="ft">Kaki (ft)</option>
-                <option value="yd">Yard (yd)</option>
-                <option value="mi">Mil (mi)</option>
-              </select>
-            </div>
-            <div class="arrow-icon">→</div>
-            <div class="input-group">
-              <label>Ke</label>
-              <select id="conv-len-to">
-                <option value="mm">Milimeter (mm)</option>
-                <option value="cm">Sentimeter (cm)</option>
-                <option value="m">Meter (m)</option>
-                <option value="km" selected>Kilometer (km)</option>
-                <option value="in">Inci (in)</option>
-                <option value="ft">Kaki (ft)</option>
-                <option value="yd">Yard (yd)</option>
-                <option value="mi">Mil (mi)</option>
-              </select>
-            </div>
-          </div>
-          <button class="calc-submit" id="conv-len-btn">Konversi</button>
-          <div class="result-box" id="conv-len-result">Hasil akan tampil di sini</div>
-          <div class="steps-box" id="conv-len-steps"></div>
-        </div>
-
-        <!-- Weight -->
-        <div class="conv-panel" id="conv-weight">
-          <div class="input-group">
-            <label>Nilai Berat</label>
-            <input type="number" id="conv-wt-val" placeholder="Masukkan nilai..." />
-          </div>
-          <div class="conv-row">
-            <div class="input-group">
-              <label>Dari</label>
-              <select id="conv-wt-from">
-                <option value="mg">Miligram (mg)</option>
-                <option value="g">Gram (g)</option>
-                <option value="kg" selected>Kilogram (kg)</option>
-                <option value="ton">Ton (t)</option>
-                <option value="oz">Ons (oz)</option>
-                <option value="lb">Pon (lb)</option>
-              </select>
-            </div>
-            <div class="arrow-icon">→</div>
-            <div class="input-group">
-              <label>Ke</label>
-              <select id="conv-wt-to">
-                <option value="mg">Miligram (mg)</option>
-                <option value="g">Gram (g)</option>
-                <option value="kg">Kilogram (kg)</option>
-                <option value="ton">Ton (t)</option>
-                <option value="oz">Ons (oz)</option>
-                <option value="lb" selected>Pon (lb)</option>
-              </select>
-            </div>
-          </div>
-          <button class="calc-submit" id="conv-wt-btn">Konversi</button>
-          <div class="result-box" id="conv-wt-result">Hasil akan tampil di sini</div>
-          <div class="steps-box" id="conv-wt-steps"></div>
+          <div class="formula-box" id="arith-formula"></div>
+          <div class="steps-box" id="arith-steps"></div>
         </div>
       </div>
     </section>
 
-    <!-- ===== FACTORIAL ===== -->
-    <section class="calc-panel" id="panel-factorial">
-      <div class="calc-card">
-        <h2 class="panel-title">Kalkulator Faktorial</h2>
-        <div class="fact-intro">
-          <p>Faktorial dari n ditulis n! = n × (n−1) × (n−2) × ... × 2 × 1</p>
-          <p>Definisi: 0! = 1</p>
-        </div>
-        <div class="input-group">
-          <label>Nilai n (bilangan bulat ≥ 0)</label>
-          <input type="number" id="fact-n" placeholder="contoh: 10" min="0" max="170" step="1" />
-        </div>
-        <button class="calc-submit" id="fact-calc">Hitung Faktorial</button>
-        <div class="result-box" id="fact-result">Hasil akan tampil di sini</div>
-        <div class="steps-box" id="fact-steps"></div>
+    <!-- ════════════════════════════════════════════════════
+         TAB: LOGIKA / BITWISE
+    ═══════════════════════════════════════════════════════ -->
+    <section class="tab-panel" id="tab-logic">
+      <div class="panel-grid">
+        <div class="card input-card">
+          <h2 class="card-title"><span class="num">02</span> Operator Logika &amp; Bitwise</h2>
 
-        <div class="fact-table-wrap">
-          <h3>Tabel Faktorial (0! hingga 15!)</h3>
-          <div class="fact-table" id="fact-table"></div>
+          <div class="form-group">
+            <label>Operand A (bilangan bulat)</label>
+            <input type="number" id="logic-a" placeholder="contoh: 12" step="1" />
+          </div>
+
+          <div class="op-grid">
+            <button class="op-btn active" data-op="and">AND</button>
+            <button class="op-btn" data-op="or">OR</button>
+            <button class="op-btn" data-op="not">NOT</button>
+            <button class="op-btn" data-op="xor">XOR</button>
+            <button class="op-btn" data-op="nand">NAND</button>
+            <button class="op-btn" data-op="nor">NOR</button>
+          </div>
+
+          <div class="form-group" id="logic-b-group">
+            <label>Operand B (bilangan bulat)</label>
+            <input type="number" id="logic-b" placeholder="contoh: 10" step="1" />
+          </div>
+
+          <button class="calc-btn" id="logic-calc">Hitung →</button>
+        </div>
+
+        <div class="card result-card">
+          <div class="result-display" id="logic-result-display">
+            <span class="result-placeholder">Hasil muncul di sini</span>
+          </div>
+          <div class="formula-box" id="logic-formula"></div>
+          <div class="steps-box" id="logic-steps"></div>
         </div>
       </div>
     </section>
 
-    <!-- ===== FIBONACCI ===== -->
-    <section class="calc-panel" id="panel-fibonacci">
-      <div class="calc-card">
-        <h2 class="panel-title">Barisan Fibonacci</h2>
-        <div class="fact-intro">
-          <p>F(0) = 0, F(1) = 1, F(n) = F(n−1) + F(n−2)</p>
-        </div>
-        <div class="fib-inputs">
-          <div class="input-group">
-            <label>Suku ke-n (cari 1 nilai)</label>
-            <input type="number" id="fib-n" placeholder="contoh: 10" min="0" max="1000" step="1" />
-            <button class="calc-submit sm" id="fib-single">Cari F(n)</button>
+    <!-- ════════════════════════════════════════════════════
+         TAB: KONVERSI
+    ═══════════════════════════════════════════════════════ -->
+    <section class="tab-panel" id="tab-convert">
+      <div class="convert-tabs">
+        <button class="conv-tab active" data-conv="base">Basis Bilangan</button>
+        <button class="conv-tab" data-conv="temperature">Suhu</button>
+        <button class="conv-tab" data-conv="currency">Mata Uang</button>
+      </div>
+
+      <!-- Base Conversion -->
+      <div class="conv-panel active" id="conv-base">
+        <div class="panel-grid">
+          <div class="card input-card">
+            <h2 class="card-title"><span class="num">03a</span> Konversi Basis</h2>
+            <div class="form-group">
+              <label>Angka Input</label>
+              <input type="text" id="base-number" placeholder="contoh: 255" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Dari Basis</label>
+                <select id="base-from">
+                  <option value="10">Desimal (10)</option>
+                  <option value="2">Biner (2)</option>
+                  <option value="8">Oktal (8)</option>
+                  <option value="16">Heksadesimal (16)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Ke Basis</label>
+                <select id="base-to">
+                  <option value="2">Biner (2)</option>
+                  <option value="8">Oktal (8)</option>
+                  <option value="10">Desimal (10)</option>
+                  <option value="16">Heksadesimal (16)</option>
+                </select>
+              </div>
+            </div>
+            <button class="calc-btn" id="base-calc">Konversi →</button>
           </div>
-          <div class="divider-or">atau</div>
-          <div class="input-group">
-            <label>Tampilkan barisan 0 sampai n</label>
-            <input type="number" id="fib-seq" placeholder="contoh: 20" min="1" max="100" step="1" />
-            <button class="calc-submit sm" id="fib-sequence">Tampilkan Barisan</button>
+          <div class="card result-card">
+            <div class="result-display" id="base-result-display"><span class="result-placeholder">Hasil muncul di sini</span></div>
+            <div class="formula-box" id="base-formula"></div>
+            <div class="steps-box" id="base-steps"></div>
           </div>
         </div>
-        <div class="result-box" id="fib-result">Hasil akan tampil di sini</div>
-        <div class="steps-box" id="fib-steps"></div>
-        <div class="fib-visual" id="fib-visual"></div>
+      </div>
+
+      <!-- Temperature Conversion -->
+      <div class="conv-panel" id="conv-temperature">
+        <div class="panel-grid">
+          <div class="card input-card">
+            <h2 class="card-title"><span class="num">03b</span> Konversi Suhu</h2>
+            <div class="form-group">
+              <label>Nilai Suhu</label>
+              <input type="number" id="temp-value" placeholder="contoh: 100" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Dari</label>
+                <select id="temp-from">
+                  <option value="C">Celsius (°C)</option>
+                  <option value="F">Fahrenheit (°F)</option>
+                  <option value="K">Kelvin (K)</option>
+                  <option value="R">Réaumur (°R)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Ke</label>
+                <select id="temp-to">
+                  <option value="F">Fahrenheit (°F)</option>
+                  <option value="C">Celsius (°C)</option>
+                  <option value="K">Kelvin (K)</option>
+                  <option value="R">Réaumur (°R)</option>
+                </select>
+              </div>
+            </div>
+            <button class="calc-btn" id="temp-calc">Konversi →</button>
+          </div>
+          <div class="card result-card">
+            <div class="result-display" id="temp-result-display"><span class="result-placeholder">Hasil muncul di sini</span></div>
+            <div class="formula-box" id="temp-formula"></div>
+            <div class="steps-box" id="temp-steps"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Currency Conversion -->
+      <div class="conv-panel" id="conv-currency">
+        <div class="panel-grid">
+          <div class="card input-card">
+            <h2 class="card-title"><span class="num">03c</span> Konversi Mata Uang</h2>
+            <p class="info-note">⚠ Rate bersifat statis untuk keperluan demo akademik.</p>
+            <div class="form-group">
+              <label>Jumlah</label>
+              <input type="number" id="cur-value" placeholder="contoh: 1000000" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Dari</label>
+                <select id="cur-from">
+                  <option value="IDR">IDR – Rupiah</option>
+                  <option value="USD">USD – Dollar</option>
+                  <option value="EUR">EUR – Euro</option>
+                  <option value="SGD">SGD – Dollar Singapura</option>
+                  <option value="JPY">JPY – Yen</option>
+                  <option value="GBP">GBP – Pound</option>
+                  <option value="AUD">AUD – Dollar Australia</option>
+                  <option value="MYR">MYR – Ringgit</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Ke</label>
+                <select id="cur-to">
+                  <option value="USD">USD – Dollar</option>
+                  <option value="IDR">IDR – Rupiah</option>
+                  <option value="EUR">EUR – Euro</option>
+                  <option value="SGD">SGD – Dollar Singapura</option>
+                  <option value="JPY">JPY – Yen</option>
+                  <option value="GBP">GBP – Pound</option>
+                  <option value="AUD">AUD – Dollar Australia</option>
+                  <option value="MYR">MYR – Ringgit</option>
+                </select>
+              </div>
+            </div>
+            <button class="calc-btn" id="cur-calc">Konversi →</button>
+          </div>
+          <div class="card result-card">
+            <div class="result-display" id="cur-result-display"><span class="result-placeholder">Hasil muncul di sini</span></div>
+            <div class="formula-box" id="cur-formula"></div>
+            <div class="steps-box" id="cur-steps"></div>
+          </div>
+        </div>
       </div>
     </section>
+
+    <!-- ════════════════════════════════════════════════════
+         TAB: FAKTORIAL & FIBONACCI
+    ═══════════════════════════════════════════════════════ -->
+    <section class="tab-panel" id="tab-fibonacci">
+      <div class="panel-grid two-col">
+
+        <!-- Factorial -->
+        <div class="card input-card">
+          <h2 class="card-title"><span class="num">04a</span> Faktorial</h2>
+          <div class="form-group">
+            <label>n (0 – 170)</label>
+            <input type="number" id="fact-n" placeholder="contoh: 10" min="0" max="170" />
+          </div>
+          <button class="calc-btn" id="fact-calc">Hitung →</button>
+          <div class="result-display mt" id="fact-result-display"><span class="result-placeholder">n!</span></div>
+          <div class="formula-box" id="fact-formula"></div>
+          <div class="steps-box" id="fact-steps"></div>
+        </div>
+
+        <!-- Fibonacci -->
+        <div class="card input-card">
+          <h2 class="card-title"><span class="num">04b</span> Deret Fibonacci</h2>
+          <div class="form-group">
+            <label>Jumlah suku n (1 – 80)</label>
+            <input type="number" id="fib-n" placeholder="contoh: 10" min="1" max="80" />
+          </div>
+          <button class="calc-btn" id="fib-calc">Hitung →</button>
+          <div class="result-display mt" id="fib-result-display"><span class="result-placeholder">Deret...</span></div>
+          <div class="formula-box" id="fib-formula"></div>
+          <div class="steps-box" id="fib-steps"></div>
+          <div class="fib-sequence" id="fib-sequence"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── History Panel ─────────────────────────────────── -->
+    <aside class="history-panel">
+      <div class="history-header">
+        <h3>Riwayat <span id="hist-count">0</span></h3>
+        <button class="clear-hist" id="clearHistory">Hapus</button>
+      </div>
+      <ul class="history-list" id="historyList">
+        <li class="hist-empty">Belum ada riwayat perhitungan</li>
+      </ul>
+    </aside>
 
   </main>
 
-  <!-- FOOTER -->
-  <footer class="footer">
-    <p>CalcMaster Pro · Kalkulator Lengkap · Dibuat dengan ❤</p>
+  <footer class="site-footer">
+    <span>Black Cat Calculator · Pengantar Pemrograman · 2025/2026</span>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
