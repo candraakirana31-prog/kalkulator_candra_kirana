@@ -1,670 +1,400 @@
-from flask import Flask, request, jsonify, send_from_directory
-
-try:
-    from flask_cors import CORS
-except ImportError:
-    CORS = lambda app: None
-
+from flask import Flask, render_template, request, jsonify
 import math
-import os
 
-app = Flask(__name__, static_folder=".")
-CORS(app)
+app = Flask(__name__)
 
-# ══════════════════════════════════════════
-# SERVE FRONTEND
-# ══════════════════════════════════════════
+# ─── Static Currency Rates (base: IDR) ───────────────────────────────────────
+CURRENCY_RATES = {
+    "IDR": 1,
+    "USD": 0.000063,
+    "EUR": 0.000058,
+    "SGD": 0.000085,
+    "JPY": 0.0096,
+    "GBP": 0.000050,
+    "AUD": 0.000097,
+    "MYR": 0.000293,
+}
+
+# ─── Routes ──────────────────────────────────────────────────────────────────
 
 @app.route("/")
 def index():
-    return send_from_directory(".", "index.html")
-
-@app.route("/<path:filename>")
-def static_files(filename):
-    return send_from_directory(".", filename)
+    return render_template("index.html")
 
 
-# ══════════════════════════════════════════
-# HELPER FUNCTIONS
-# ══════════════════════════════════════════
+# ─── Arithmetic ──────────────────────────────────────────────────────────────
 
-def format_result(value):
-    """Format angka untuk respons API."""
-    if isinstance(value, int):
-        return str(value)
-    if isinstance(value, float):
-        if value == int(value) and abs(value) < 1e15:
-            return str(int(value))
-        return f"{value:.10g}"
-    return str(value)
-
-
-def error(msg, status=400):
-    return jsonify({"success": False, "error": msg}), status
-
-
-# ══════════════════════════════════════════
-# STANDARD CALCULATOR
-# ══════════════════════════════════════════
-
-@app.route("/api/standard", methods=["POST"])
-def standard_calc():
-    """
-    Endpoint kalkulator standar.
-    Body: { "expression": "12 + 34" }
-    atau { "a": 12, "operator": "+", "b": 34 }
-    """
-    data = request.get_json(force=True)
-
-    if "expression" in data:
-        expr = data["expression"].strip()
-        # Sanitasi: hanya izinkan angka dan operator dasar
-        allowed = set("0123456789.+-*/ ()")
-        if not all(c in allowed for c in expr):
-            return error("Ekspresi mengandung karakter yang tidak diizinkan")
-        try:
-            result = eval(expr, {"__builtins__": {}}, {})
-            return jsonify({
-                "success": True,
-                "result": format_result(result),
-                "expression": expr
-            })
-        except ZeroDivisionError:
-            return error("Pembagian oleh nol tidak diperbolehkan")
-        except Exception as e:
-            return error(f"Ekspresi tidak valid: {str(e)}")
-
+@app.route("/api/arithmetic", methods=["POST"])
+def arithmetic():
+    data = request.get_json()
     a = data.get("a")
-    op = data.get("operator")
     b = data.get("b")
-
-    if a is None or op is None:
-        return error("Parameter 'a' dan 'operator' diperlukan")
+    op = data.get("op")
 
     try:
         a = float(a)
-        b = float(b) if b is not None else None
-    except (TypeError, ValueError):
-        return error("Nilai angka tidak valid")
+        b = float(b) if b is not None and b != "" else None
 
-    if op == "+" and b is not None:
-        result = a + b
-    elif op == "-" and b is not None:
-        result = a - b
-    elif op == "*" and b is not None:
-        result = a * b
-    elif op == "/" and b is not None:
-        if b == 0:
-            return error("Pembagian oleh nol tidak diperbolehkan")
-        result = a / b
-    elif op == "%" and b is not None:
-        if b == 0:
-            return error("Modulo oleh nol tidak diperbolehkan")
-        result = a % b
-    elif op == "sqrt":
-        if a < 0:
-            return error("Akar kuadrat dari bilangan negatif tidak valid")
-        result = math.sqrt(a)
-    elif op == "pow" and b is not None:
-        result = math.pow(a, b)
-    elif op == "abs":
-        result = abs(a)
-    elif op == "negate":
-        result = -a
-    else:
-        return error(f"Operator '{op}' tidak dikenali")
+        result = None
+        formula = ""
+        steps = []
 
-    return jsonify({
-        "success": True,
-        "result": format_result(result),
-        "a": a,
-        "operator": op,
-        "b": b
-    })
+        if op == "add":
+            result = a + b
+            formula = f"{a} + {b} = {result}"
+            steps = [
+                f"Operand pertama: {a}",
+                f"Operand kedua: {b}",
+                f"Penjumlahan: {a} + {b} = {result}"
+            ]
+        elif op == "sub":
+            result = a - b
+            formula = f"{a} - {b} = {result}"
+            steps = [
+                f"Operand pertama: {a}",
+                f"Operand kedua: {b}",
+                f"Pengurangan: {a} - {b} = {result}"
+            ]
+        elif op == "mul":
+            result = a * b
+            formula = f"{a} × {b} = {result}"
+            steps = [
+                f"Operand pertama: {a}",
+                f"Operand kedua: {b}",
+                f"Perkalian: {a} × {b} = {result}"
+            ]
+        elif op == "div":
+            if b == 0:
+                return jsonify({"error": "Pembagian dengan nol tidak diperbolehkan!"}), 400
+            result = a / b
+            formula = f"{a} ÷ {b} = {result}"
+            steps = [
+                f"Operand pertama: {a}",
+                f"Operand kedua: {b}",
+                f"Pembagian: {a} ÷ {b} = {result}"
+            ]
+        elif op == "pow":
+            result = a ** b
+            formula = f"{a} ^ {b} = {result}"
+            steps = [
+                f"Basis: {a}",
+                f"Eksponen: {b}",
+                f"Pangkat: {a}^{b} = {result}"
+            ]
+        elif op == "sqrt":
+            if a < 0:
+                return jsonify({"error": "Akar kuadrat dari bilangan negatif tidak nyata!"}), 400
+            result = math.sqrt(a)
+            formula = f"√{a} = {result}"
+            steps = [
+                f"Bilangan: {a}",
+                f"Akar kuadrat: √{a} = {result}"
+            ]
+        elif op == "mod":
+            if b == 0:
+                return jsonify({"error": "Modulus dengan nol tidak diperbolehkan!"}), 400
+            result = a % b
+            formula = f"{a} mod {b} = {result}"
+            steps = [
+                f"Operand pertama: {a}",
+                f"Operand kedua: {b}",
+                f"Floor division: {a} // {b} = {int(a // b)}",
+                f"Sisa: {a} - ({int(a // b)} × {b}) = {result}"
+            ]
+        elif op == "floordiv":
+            if b == 0:
+                return jsonify({"error": "Floor division dengan nol tidak diperbolehkan!"}), 400
+            result = int(a // b)
+            formula = f"{a} // {b} = {result}"
+            steps = [
+                f"Operand pertama: {a}",
+                f"Operand kedua: {b}",
+                f"Floor division (hasil bagi tanpa sisa): {a} // {b} = {result}"
+            ]
+        else:
+            return jsonify({"error": "Operasi tidak dikenal"}), 400
 
+        return jsonify({
+            "result": result,
+            "formula": formula,
+            "steps": steps
+        })
 
-# ══════════════════════════════════════════
-# ARITHMETIC CALCULATOR
-# ══════════════════════════════════════════
-
-@app.route("/api/arithmetic", methods=["POST"])
-def arithmetic_calc():
-    """
-    Endpoint kalkulator aritmatika dengan langkah-langkah.
-    Body: { "operation": "add", "a": 10, "b": 5 }
-    Operasi: add, sub, mul, div, mod, pow, sqrt, abs
-    """
-    data = request.get_json(force=True)
-    operation = data.get("operation")
-    steps = []
-
-    try:
-        a = float(data.get("a", 0))
-    except (TypeError, ValueError):
-        return error("Nilai 'a' tidak valid")
-
-    single_ops = {"sqrt", "abs", "negate"}
-    if operation not in single_ops:
-        try:
-            b = float(data.get("b", 0))
-        except (TypeError, ValueError):
-            return error("Nilai 'b' tidak valid")
-    else:
-        b = None
-
-    if operation == "add":
-        result = a + b
-        steps = [
-            f"Penjumlahan: {a} + {b}",
-            f"Hasil: {format_result(result)}"
-        ]
-        label = f"{a} + {b}"
-    elif operation == "sub":
-        result = a - b
-        steps = [
-            f"Pengurangan: {a} - {b}",
-            f"Hasil: {format_result(result)}"
-        ]
-        label = f"{a} - {b}"
-    elif operation == "mul":
-        result = a * b
-        steps = [
-            f"Perkalian: {a} × {b}",
-            f"Hasil: {format_result(result)}"
-        ]
-        label = f"{a} × {b}"
-    elif operation == "div":
-        if b == 0:
-            return error("Pembagian oleh nol tidak diperbolehkan")
-        result = a / b
-        steps = [
-            f"Pembagian: {a} ÷ {b}",
-            f"Hasil: {format_result(result)}",
-            f"Pembulatan ke bawah: {int(a // b)}, sisa: {int(a % b)}"
-        ]
-        label = f"{a} ÷ {b}"
-    elif operation == "mod":
-        if b == 0:
-            return error("Modulo oleh nol tidak diperbolehkan")
-        result = a % b
-        steps = [
-            f"Modulo: {a} mod {b}",
-            f"{int(a // b)} × {b} = {int(a // b) * b}",
-            f"Sisa: {a} - {int(a // b) * b} = {format_result(result)}"
-        ]
-        label = f"{a} mod {b}"
-    elif operation == "pow":
-        result = math.pow(a, b)
-        steps = [
-            f"Pangkat: {a}^{b}",
-            f"Hasil: {format_result(result)}"
-        ]
-        label = f"{a}^{b}"
-    elif operation == "sqrt":
-        if a < 0:
-            return error("Akar kuadrat dari bilangan negatif tidak valid")
-        result = math.sqrt(a)
-        steps = [
-            f"Akar kuadrat: √{a}",
-            f"Hasil: {format_result(result)}",
-            f"Verifikasi: {format_result(result)} × {format_result(result)} ≈ {format_result(result * result)}"
-        ]
-        label = f"√{a}"
-    elif operation == "abs":
-        result = abs(a)
-        steps = [
-            f"Nilai mutlak: |{a}|",
-            f"Hasil: {format_result(result)}"
-        ]
-        label = f"|{a}|"
-    else:
-        return error(f"Operasi '{operation}' tidak dikenali")
-
-    return jsonify({
-        "success": True,
-        "result": format_result(result),
-        "label": label,
-        "steps": steps
-    })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 
-# ══════════════════════════════════════════
-# BITWISE CALCULATOR
-# ══════════════════════════════════════════
+# ─── Logic ───────────────────────────────────────────────────────────────────
 
-@app.route("/api/bitwise", methods=["POST"])
-def bitwise_calc():
-    """
-    Endpoint kalkulator bitwise.
-    Body: { "operation": "and", "a": 12, "b": 10 }
-    Operasi: and, or, xor, not, lshift, rshift
-    """
-    data = request.get_json(force=True)
-    operation = data.get("operation")
+@app.route("/api/logic", methods=["POST"])
+def logic():
+    data = request.get_json()
+    a = data.get("a")
+    b = data.get("b")
+    op = data.get("op")
 
     try:
-        a = int(data.get("a", 0))
-    except (TypeError, ValueError):
-        return error("Nilai 'a' harus bilangan bulat")
+        a = int(a)
+        b = int(b) if b is not None and b != "" else None
 
-    shift_ops = {"lshift", "rshift"}
-    single_ops = {"not"}
+        result = None
+        formula = ""
+        steps = []
 
-    if operation not in single_ops:
-        try:
-            b = int(data.get("b", 0))
-        except (TypeError, ValueError):
-            return error("Nilai 'b' harus bilangan bulat")
-    else:
-        b = None
+        if op == "and":
+            result = a & b
+            formula = f"{a} AND {b} = {result}"
+            steps = [
+                f"A = {a} → biner: {bin(a)}",
+                f"B = {b} → biner: {bin(b)}",
+                f"AND bitwise: setiap bit 1 hanya jika kedua bit 1",
+                f"Hasil: {bin(result)} = {result}"
+            ]
+        elif op == "or":
+            result = a | b
+            formula = f"{a} OR {b} = {result}"
+            steps = [
+                f"A = {a} → biner: {bin(a)}",
+                f"B = {b} → biner: {bin(b)}",
+                f"OR bitwise: setiap bit 1 jika salah satu bit 1",
+                f"Hasil: {bin(result)} = {result}"
+            ]
+        elif op == "not":
+            result = ~a
+            formula = f"NOT {a} = {result}"
+            steps = [
+                f"A = {a} → biner: {bin(a)}",
+                f"NOT bitwise: membalik setiap bit",
+                f"Dalam Python: ~{a} = -{a+1} (komplemen dua)",
+                f"Hasil: {result}"
+            ]
+        elif op == "xor":
+            result = a ^ b
+            formula = f"{a} XOR {b} = {result}"
+            steps = [
+                f"A = {a} → biner: {bin(a)}",
+                f"B = {b} → biner: {bin(b)}",
+                f"XOR bitwise: bit 1 jika kedua bit berbeda",
+                f"Hasil: {bin(result)} = {result}"
+            ]
+        elif op == "nand":
+            result = ~(a & b)
+            formula = f"{a} NAND {b} = {result}"
+            steps = [
+                f"A = {a} → biner: {bin(a)}",
+                f"B = {b} → biner: {bin(b)}",
+                f"AND dulu: {a} & {b} = {a & b}",
+                f"Lalu NOT: ~{a & b} = {result}",
+                f"Hasil NAND: {result}"
+            ]
+        elif op == "nor":
+            result = ~(a | b)
+            formula = f"{a} NOR {b} = {result}"
+            steps = [
+                f"A = {a} → biner: {bin(a)}",
+                f"B = {b} → biner: {bin(b)}",
+                f"OR dulu: {a} | {b} = {a | b}",
+                f"Lalu NOT: ~{a | b} = {result}",
+                f"Hasil NOR: {result}"
+            ]
+        else:
+            return jsonify({"error": "Operasi tidak dikenal"}), 400
 
-    n = int(data.get("n", 1))  # jumlah shift
+        return jsonify({
+            "result": result,
+            "formula": formula,
+            "steps": steps
+        })
 
-    bin_a = format(a & 0xFFFFFFFF, "08b")
-    bin_b = format(b & 0xFFFFFFFF, "08b") if b is not None else ""
-
-    steps = [f"A = {a}  →  0b{bin_a}  (0x{a & 0xFFFFFFFF:X})"]
-    if b is not None:
-        steps.append(f"B = {b}  →  0b{bin_b}  (0x{b & 0xFFFFFFFF:X})")
-
-    if operation == "and":
-        result = a & b
-        steps += [
-            f"Operasi AND:",
-            f"  {bin_a}",
-            f"& {bin_b}",
-            f"= {format(result & 0xFFFFFFFF, '08b')}",
-            f"Aturan: bit=1 hanya jika kedua bit=1"
-        ]
-        label = f"{a} AND {b}"
-    elif operation == "or":
-        result = a | b
-        steps += [
-            f"Operasi OR:",
-            f"  {bin_a}",
-            f"| {bin_b}",
-            f"= {format(result & 0xFFFFFFFF, '08b')}",
-            f"Aturan: bit=1 jika salah satu bit=1"
-        ]
-        label = f"{a} OR {b}"
-    elif operation == "xor":
-        result = a ^ b
-        steps += [
-            f"Operasi XOR:",
-            f"  {bin_a}",
-            f"^ {bin_b}",
-            f"= {format(result & 0xFFFFFFFF, '08b')}",
-            f"Aturan: bit=1 jika bit berbeda"
-        ]
-        label = f"{a} XOR {b}"
-    elif operation == "not":
-        result = ~a
-        steps += [
-            f"Operasi NOT (flip semua bit):",
-            f"  {bin_a}",
-            f"= {format(result & 0xFFFFFFFF, '08b')}",
-            f"NOT menggunakan komplemen dua"
-        ]
-        label = f"NOT {a}"
-    elif operation == "lshift":
-        result = a << n
-        steps += [
-            f"Left Shift {n} posisi:",
-            f"  {bin_a} << {n}",
-            f"= {format(result & 0xFFFFFFFF, '08b')}",
-            f"Sama dengan: {a} × 2^{n} = {a} × {2**n} = {result}"
-        ]
-        label = f"{a} << {n}"
-    elif operation == "rshift":
-        result = a >> n
-        steps += [
-            f"Right Shift {n} posisi:",
-            f"  {bin_a} >> {n}",
-            f"= {format(result & 0xFFFFFFFF, '08b')}",
-            f"Sama dengan: floor({a} / 2^{n}) = {result}"
-        ]
-        label = f"{a} >> {n}"
-    else:
-        return error(f"Operasi '{operation}' tidak dikenali")
-
-    steps.append(f"Hasil desimal: {result}")
-    steps.append(f"Hasil heksadesimal: 0x{result & 0xFFFFFFFF:X}")
-
-    return jsonify({
-        "success": True,
-        "result": result,
-        "result_bin": bin(result),
-        "result_hex": hex(result),
-        "label": label,
-        "steps": steps
-    })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 
-# ══════════════════════════════════════════
-# CONVERSION CALCULATOR
-# ══════════════════════════════════════════
+# ─── Conversion ──────────────────────────────────────────────────────────────
 
-@app.route("/api/convert/number", methods=["POST"])
-def convert_number():
-    """Konversi sistem bilangan."""
-    data = request.get_json(force=True)
-    val = data.get("value", "").strip()
+@app.route("/api/convert/base", methods=["POST"])
+def convert_base():
+    data = request.get_json()
+    number = data.get("number", "")
     from_base = int(data.get("from_base", 10))
     to_base = int(data.get("to_base", 2))
 
-    if not val:
-        return error("Nilai tidak boleh kosong")
-
     try:
-        dec = int(val, from_base)
-    except ValueError:
-        return error(f"Nilai '{val}' tidak valid untuk basis {from_base}")
+        decimal = int(str(number), from_base)
+        steps = [f"Input: {number} (basis {from_base})"]
+        steps.append(f"Konversi ke desimal: {decimal}")
 
-    if to_base == 2:
-        result = bin(dec)[2:]
-    elif to_base == 8:
-        result = oct(dec)[2:]
-    elif to_base == 10:
-        result = str(dec)
-    elif to_base == 16:
-        result = hex(dec)[2:].upper()
-    else:
-        result = ""
-        n = dec
-        while n:
-            result = str(n % to_base) + result
-            n //= to_base
+        if to_base == 2:
+            result = bin(decimal)[2:]
+            steps.append(f"Desimal {decimal} → Biner: {result}")
+        elif to_base == 8:
+            result = oct(decimal)[2:]
+            steps.append(f"Desimal {decimal} → Oktal: {result}")
+        elif to_base == 10:
+            result = str(decimal)
+            steps.append(f"Hasil dalam desimal: {result}")
+        elif to_base == 16:
+            result = hex(decimal)[2:].upper()
+            steps.append(f"Desimal {decimal} → Heksadesimal: {result}")
+        else:
+            return jsonify({"error": "Basis tidak didukung"}), 400
 
-    base_names = {2: "Biner", 8: "Oktal", 10: "Desimal", 16: "Heksadesimal"}
+        base_names = {2: "Biner", 8: "Oktal", 10: "Desimal", 16: "Heksadesimal"}
+        formula = f"{number} ({base_names.get(from_base, from_base)}) = {result} ({base_names.get(to_base, to_base)})"
 
-    return jsonify({
-        "success": True,
-        "input": val,
-        "from_base": from_base,
-        "to_base": to_base,
-        "result": result.upper(),
-        "decimal": dec,
-        "steps": [
-            f"Input: {val} (basis {from_base} / {base_names.get(from_base, str(from_base))})",
-            f"Konversi ke desimal: {dec}",
-            f"Konversi ke basis {to_base}: {result.upper()}",
-        ]
-    })
+        return jsonify({"result": result, "formula": formula, "steps": steps})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 
 @app.route("/api/convert/temperature", methods=["POST"])
 def convert_temperature():
-    """Konversi suhu."""
-    data = request.get_json(force=True)
-    try:
-        val = float(data.get("value"))
-    except (TypeError, ValueError):
-        return error("Nilai suhu tidak valid")
-
+    data = request.get_json()
+    value = float(data.get("value", 0))
     from_unit = data.get("from_unit", "C")
     to_unit = data.get("to_unit", "F")
 
-    # Ke Celsius dulu
-    to_celsius = {"C": lambda v: v, "F": lambda v: (v - 32) * 5 / 9,
-                  "K": lambda v: v - 273.15, "R": lambda v: (v - 491.67) * 5 / 9}
-    from_celsius = {"C": lambda v: v, "F": lambda v: v * 9 / 5 + 32,
-                    "K": lambda v: v + 273.15, "R": lambda v: (v + 273.15) * 9 / 5}
-    symbols = {"C": "°C", "F": "°F", "K": "K", "R": "°R"}
-
-    if from_unit not in to_celsius:
-        return error(f"Unit '{from_unit}' tidak dikenali")
-    if to_unit not in from_celsius:
-        return error(f"Unit '{to_unit}' tidak dikenali")
-
-    celsius = to_celsius[from_unit](val)
-    result = from_celsius[to_unit](celsius)
-
-    return jsonify({
-        "success": True,
-        "input": val,
-        "from_unit": from_unit,
-        "to_unit": to_unit,
-        "result": round(result, 8),
-        "result_formatted": f"{result:.4f}",
-        "steps": [
-            f"Input: {val}{symbols[from_unit]}",
-            f"Konversi ke Celsius: {celsius:.4f}°C",
-            f"Konversi ke {to_unit}: {result:.4f}{symbols[to_unit]}"
-        ]
-    })
-
-
-@app.route("/api/convert/length", methods=["POST"])
-def convert_length():
-    """Konversi panjang."""
-    data = request.get_json(force=True)
     try:
-        val = float(data.get("value"))
-    except (TypeError, ValueError):
-        return error("Nilai panjang tidak valid")
+        # Convert to Celsius first
+        if from_unit == "C":
+            celsius = value
+        elif from_unit == "F":
+            celsius = (value - 32) * 5 / 9
+        elif from_unit == "K":
+            celsius = value - 273.15
+        elif from_unit == "R":
+            celsius = value * 5 / 4
+        else:
+            return jsonify({"error": "Satuan tidak dikenal"}), 400
 
-    from_unit = data.get("from_unit", "m")
-    to_unit = data.get("to_unit", "km")
+        # Convert Celsius to target
+        if to_unit == "C":
+            result = celsius
+        elif to_unit == "F":
+            result = celsius * 9 / 5 + 32
+        elif to_unit == "K":
+            result = celsius + 273.15
+        elif to_unit == "R":
+            result = celsius * 4 / 5
+        else:
+            return jsonify({"error": "Satuan tidak dikenal"}), 400
 
-    to_m = {"mm": 0.001, "cm": 0.01, "m": 1, "km": 1000,
-            "in": 0.0254, "ft": 0.3048, "yd": 0.9144, "mi": 1609.344}
+        unit_names = {"C": "Celsius", "F": "Fahrenheit", "K": "Kelvin", "R": "Réaumur"}
+        formula = f"{value}° {unit_names[from_unit]} = {round(result, 4)}° {unit_names[to_unit]}"
 
-    if from_unit not in to_m or to_unit not in to_m:
-        return error("Unit panjang tidak dikenali")
-
-    meters = val * to_m[from_unit]
-    result = meters / to_m[to_unit]
-
-    return jsonify({
-        "success": True,
-        "input": val,
-        "from_unit": from_unit,
-        "to_unit": to_unit,
-        "result": result,
-        "result_formatted": f"{result:.6g}",
-        "steps": [
-            f"Input: {val} {from_unit}",
-            f"Konversi ke meter: {meters:.6g} m",
-            f"Konversi ke {to_unit}: {result:.6g} {to_unit}"
+        steps = [
+            f"Nilai input: {value}° {unit_names[from_unit]}",
+            f"Konversi ke Celsius: {round(celsius, 4)}°C",
+            f"Konversi ke {unit_names[to_unit]}: {round(result, 4)}"
         ]
-    })
+
+        return jsonify({"result": round(result, 4), "formula": formula, "steps": steps})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 
-@app.route("/api/convert/weight", methods=["POST"])
-def convert_weight():
-    """Konversi berat."""
-    data = request.get_json(force=True)
+@app.route("/api/convert/currency", methods=["POST"])
+def convert_currency():
+    data = request.get_json()
+    value = float(data.get("value", 0))
+    from_cur = data.get("from_currency", "IDR")
+    to_cur = data.get("to_currency", "USD")
+
     try:
-        val = float(data.get("value"))
-    except (TypeError, ValueError):
-        return error("Nilai berat tidak valid")
+        if from_cur not in CURRENCY_RATES or to_cur not in CURRENCY_RATES:
+            return jsonify({"error": "Mata uang tidak dikenal"}), 400
 
-    from_unit = data.get("from_unit", "kg")
-    to_unit = data.get("to_unit", "lb")
+        in_idr = value / CURRENCY_RATES[from_cur]
+        result = in_idr * CURRENCY_RATES[to_cur]
 
-    to_kg = {"mg": 1e-6, "g": 0.001, "kg": 1, "ton": 1000,
-             "oz": 0.0283495, "lb": 0.453592}
-
-    if from_unit not in to_kg or to_unit not in to_kg:
-        return error("Unit berat tidak dikenali")
-
-    kg = val * to_kg[from_unit]
-    result = kg / to_kg[to_unit]
-
-    return jsonify({
-        "success": True,
-        "input": val,
-        "from_unit": from_unit,
-        "to_unit": to_unit,
-        "result": result,
-        "result_formatted": f"{result:.6g}",
-        "steps": [
-            f"Input: {val} {from_unit}",
-            f"Konversi ke kilogram: {kg:.6g} kg",
-            f"Konversi ke {to_unit}: {result:.6g} {to_unit}"
+        formula = f"{value} {from_cur} = {round(result, 4)} {to_cur}"
+        steps = [
+            f"Input: {value} {from_cur}",
+            f"Rate {from_cur} ke IDR: 1 {from_cur} = {1/CURRENCY_RATES[from_cur]:,.2f} IDR",
+            f"Nilai dalam IDR: {in_idr:,.4f}",
+            f"Rate IDR ke {to_cur}: {CURRENCY_RATES[to_cur]}",
+            f"Hasil: {round(result, 4)} {to_cur}"
         ]
-    })
+
+        return jsonify({"result": round(result, 6), "formula": formula, "steps": steps})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 
-# ══════════════════════════════════════════
-# FACTORIAL CALCULATOR
-# ══════════════════════════════════════════
+# ─── Factorial & Fibonacci ────────────────────────────────────────────────────
 
 @app.route("/api/factorial", methods=["POST"])
-def factorial_calc():
-    """
-    Hitung faktorial dengan langkah-langkah.
-    Body: { "n": 10 }
-    """
-    data = request.get_json(force=True)
-    try:
-        n = int(data.get("n"))
-    except (TypeError, ValueError):
-        return error("Nilai 'n' harus bilangan bulat")
+def factorial():
+    data = request.get_json()
+    n = int(data.get("n", 0))
 
     if n < 0:
-        return error("Faktorial hanya untuk bilangan bulat ≥ 0")
-    if n > 500:
-        return error("Nilai terlalu besar (maks 500)")
+        return jsonify({"error": "Faktorial hanya untuk bilangan non-negatif!"}), 400
+    if n > 170:
+        return jsonify({"error": "Bilangan terlalu besar (maks 170)!"}), 400
 
-    result = math.factorial(n)
-    steps = []
-
-    if n == 0:
-        steps = ["0! = 1 (definisi)"]
-    elif n <= 12:
-        parts = " × ".join(str(i) for i in range(n, 0, -1))
-        steps = [
-            f"{n}! = {parts}",
-            f"    = {result}"
-        ]
-    else:
-        steps = [
-            f"{n}! = {n} × {n-1} × {n-2} × ... × 2 × 1",
-            f"    = {result}",
-            f"Jumlah digit: {len(str(result))}"
-        ]
-
-    return jsonify({
-        "success": True,
-        "n": n,
-        "result": str(result),
-        "digits": len(str(result)),
-        "steps": steps
-    })
-
-
-@app.route("/api/factorial/table", methods=["GET"])
-def factorial_table():
-    """Tabel faktorial dari 0! sampai n!."""
     try:
-        up_to = int(request.args.get("n", 15))
-        up_to = min(up_to, 30)
-    except (TypeError, ValueError):
-        up_to = 15
+        result = math.factorial(n)
+        formula = f"{n}! = {result}"
 
-    table = [{"n": i, "factorial": str(math.factorial(i))} for i in range(up_to + 1)]
-    return jsonify({"success": True, "table": table})
+        if n <= 10:
+            expansion = " × ".join(str(i) for i in range(n, 0, -1)) or "1"
+            steps = [
+                f"n = {n}",
+                f"Faktorial: n! = n × (n-1) × ... × 1",
+                f"{n}! = {expansion} = {result}"
+            ]
+        else:
+            steps = [
+                f"n = {n}",
+                f"Faktorial: n! = n × (n-1) × ... × 1",
+                f"Menghitung {n}! secara rekursif...",
+                f"Hasil: {result}"
+            ]
 
+        return jsonify({"result": result, "formula": formula, "steps": steps})
 
-# ══════════════════════════════════════════
-# FIBONACCI CALCULATOR
-# ══════════════════════════════════════════
-
-def fib_single(n):
-    """Hitung F(n) secara iteratif."""
-    if n == 0: return 0
-    if n == 1: return 1
-    a, b = 0, 1
-    for _ in range(2, n + 1):
-        a, b = b, a + b
-    return b
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 
 @app.route("/api/fibonacci", methods=["POST"])
-def fibonacci_calc():
-    """
-    Hitung Fibonacci.
-    Body: { "n": 10 } atau { "n": 20, "sequence": true }
-    """
-    data = request.get_json(force=True)
+def fibonacci():
+    data = request.get_json()
+    n = int(data.get("n", 10))
+
+    if n < 1:
+        return jsonify({"error": "n harus minimal 1!"}), 400
+    if n > 80:
+        return jsonify({"error": "n terlalu besar (maks 80)!"}), 400
+
     try:
-        n = int(data.get("n"))
-    except (TypeError, ValueError):
-        return error("Nilai 'n' harus bilangan bulat")
+        seq = [0, 1]
+        for i in range(2, n):
+            seq.append(seq[-1] + seq[-2])
+        seq = seq[:n]
 
-    if n < 0:
-        return error("Fibonacci hanya untuk n ≥ 0")
-
-    show_seq = data.get("sequence", False)
-
-    if show_seq:
-        if n > 100:
-            return error("Untuk sequence, maks n = 100")
-        seq = [fib_single(i) for i in range(n + 1)]
-        steps = [f"F({i}) = {v}" for i, v in enumerate(seq)]
-        return jsonify({
-            "success": True,
-            "n": n,
-            "sequence": [str(v) for v in seq],
-            "steps": steps
-        })
-    else:
-        if n > 1000:
-            return error("Untuk nilai tunggal, maks n = 1000")
-        result = fib_single(n)
-        steps = []
-        if n <= 2:
-            steps = [f"F({n}) = {result} (definisi dasar)"]
-        else:
-            fn1 = fib_single(n - 1)
-            fn2 = fib_single(n - 2)
-            steps = [
-                f"F({n}) = F({n-1}) + F({n-2})",
-                f"F({n}) = {fn1} + {fn2}",
-                f"F({n}) = {result}"
-            ]
-        return jsonify({
-            "success": True,
-            "n": n,
-            "result": str(result),
-            "steps": steps
-        })
-
-
-# ══════════════════════════════════════════
-# HEALTH CHECK
-# ══════════════════════════════════════════
-
-@app.route("/api/health", methods=["GET"])
-def health():
-    return jsonify({
-        "status": "ok",
-        "app": "CalcMaster Pro",
-        "version": "1.0.0",
-        "endpoints": [
-            "POST /api/standard",
-            "POST /api/arithmetic",
-            "POST /api/bitwise",
-            "POST /api/convert/number",
-            "POST /api/convert/temperature",
-            "POST /api/convert/length",
-            "POST /api/convert/weight",
-            "POST /api/factorial",
-            "GET  /api/factorial/table",
-            "POST /api/fibonacci",
+        steps = [
+            f"Membuat {n} suku pertama deret Fibonacci",
+            "F(0) = 0, F(1) = 1",
+            "F(n) = F(n-1) + F(n-2) untuk n ≥ 2",
+            f"Suku ke-{n}: {seq[-1]}",
+            f"Deret: {', '.join(map(str, seq[:15]))}{'...' if n > 15 else ''}"
         ]
-    })
 
+        return jsonify({
+            "result": seq[-1],
+            "sequence": seq,
+            "formula": f"F({n-1}) = {seq[-1]}",
+            "steps": steps
+        })
 
-# ══════════════════════════════════════════
-# MAIN
-# ══════════════════════════════════════════
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 
 if __name__ == "__main__":
-    print("=" * 50)
-    print("  CalcMaster Pro — Server Berjalan")
-    print("  Buka: http://localhost:5000")
-    print("  API:  http://localhost:5000/api/health")
-    print("=" * 50)
-    app.run(debug=True, port=5000)
+    app.run(debug=True)
