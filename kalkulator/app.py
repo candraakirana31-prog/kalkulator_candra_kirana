@@ -1,5 +1,10 @@
 from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
+
+try:
+    from flask_cors import CORS
+except ImportError:
+    CORS = lambda app: None
+
 import math
 import os
 
