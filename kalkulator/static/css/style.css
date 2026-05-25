@@ -657,3 +657,334 @@ select {
   display: flex; align-items: center; justify-content: center;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' stroke='%230a0a0c' stroke-width='3' fill='none' stroke-dasharray='30 70' stroke-linecap='round'%3E%3CanimateTransform attributeName='transform' type='rotate' from='0 12 12' to='360 12 12' dur='.7s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/svg%3E") center no-repeat;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   CAT PAW NUMPAD — 3D STYLE
+══════════════════════════════════════════════════════════════ */
+
+/* Header group */
+.header-right {
+  display: flex; align-items: center; gap: 10px;
+}
+
+/* Numpad toggle button */
+.numpad-toggle-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 10px;
+  padding: 7px 14px 7px 10px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  transition: all .2s;
+  /* 3D press effect */
+  box-shadow: 0 4px 0 var(--border), 0 5px 10px rgba(0,0,0,.3);
+  transform: translateY(0);
+}
+.numpad-toggle-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--accent) 40%, transparent), 0 5px 14px rgba(240,192,64,.2);
+}
+.numpad-toggle-btn:active,
+.numpad-toggle-btn.active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--border), 0 2px 6px rgba(0,0,0,.2);
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+.paw-svg { width: 22px; height: 22px; flex-shrink: 0; }
+.numpad-lbl { display: inline; }
+
+/* ── Floating overlay ─────────────────────────────────────── */
+.numpad-overlay {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 600;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(30px) scale(.92) rotateX(8deg);
+  transform-origin: bottom right;
+  transition: opacity .3s cubic-bezier(.34,1.56,.64,1),
+              transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.numpad-overlay.open {
+  pointer-events: all;
+  opacity: 1;
+  transform: translateY(0) scale(1) rotateX(0deg);
+}
+
+/* ── Numpad panel card ────────────────────────────────────── */
+.numpad-panel {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 24px;
+  box-shadow:
+    var(--shadow),
+    0 0 0 1px rgba(240,192,64,.06),
+    0 30px 60px rgba(0,0,0,.5);
+  padding: 18px 16px 14px;
+  width: 280px;
+  user-select: none;
+  /* subtle 3D tilt on panel */
+  perspective: 600px;
+}
+
+/* Header */
+.numpad-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.numpad-title {
+  display: flex; align-items: center; gap: 7px;
+  font-size: .75rem; font-weight: 800;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--accent);
+}
+.paw-svg-sm { width: 18px; height: 18px; }
+.numpad-header-right { display: flex; align-items: center; gap: 6px; }
+.sound-toggle, .numpad-close {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: .75rem;
+  transition: border-color .2s, color .2s;
+  color: var(--text-muted);
+}
+.sound-toggle:hover { border-color: var(--accent); }
+.numpad-close:hover  { border-color: var(--accent2); color: var(--accent2); }
+.sound-toggle.muted  { opacity: .4; }
+
+/* Mini display */
+.numpad-display {
+  background: var(--result-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  color: var(--text);
+  text-align: right;
+  min-height: 46px;
+  display: flex; align-items: center; justify-content: flex-end;
+  word-break: break-all;
+  overflow: hidden;
+  transition: box-shadow .2s;
+  margin-bottom: 4px;
+}
+.numpad-display.lit {
+  box-shadow: 0 0 0 1.5px var(--accent), inset 0 0 16px var(--accent-glow);
+  color: var(--accent);
+}
+.numpad-hint { font-size: .72rem; color: var(--text-dim); font-style: italic; font-family: var(--font-sans); }
+
+.numpad-target-label {
+  font-size: .62rem; color: var(--text-dim); font-style: italic;
+  text-align: right; margin-bottom: 12px;
+  letter-spacing: .04em;
+}
+
+/* ── Paw keyboard container ───────────────────────────────── */
+.paw-keyboard {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 10px;
+  perspective: 500px;
+}
+
+/* Rows */
+.paw-row { display: flex; gap: 10px; align-items: center; justify-content: center; }
+.paw-row-toes { }
+.paw-row-mid  { }
+.paw-row-palm { gap: 8px; }
+.paw-col-side { display: flex; flex-direction: column; gap: 10px; }
+
+/* key-wrap for 3D press illusion */
+.key-wrap {
+  border-radius: 50%;
+  /* base shadow = bottom wall of the key */
+  box-shadow: 0 5px 0 rgba(0,0,0,.55), 0 7px 14px rgba(0,0,0,.35);
+  border-radius: 50%;
+  transition: box-shadow .1s, transform .1s;
+}
+.key-wrap:active {
+  box-shadow: 0 2px 0 rgba(0,0,0,.55), 0 3px 6px rgba(0,0,0,.25);
+  transform: translateY(3px);
+}
+
+/* ── Base key styles (all paw keys) ─────────────────────── */
+.paw-key {
+  display: flex; align-items: center; justify-content: center;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+  transition: filter .12s, transform .1s;
+}
+
+/* shine overlay */
+.paw-key::after {
+  content: '';
+  position: absolute;
+  top: 5%; left: 12%; right: 12%;
+  height: 38%;
+  border-radius: 50% 50% 40% 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,.18) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Toe keys — round */
+.paw-key.toe {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 30%, #2e2e42, #1a1a28);
+  border: 1.5px solid var(--border);
+}
+[data-theme="light"] .paw-key.toe {
+  background: radial-gradient(circle at 38% 30%, #e8e4dc, #d4cfc6);
+}
+.paw-key.toe:hover {
+  border-color: var(--accent);
+  filter: brightness(1.25);
+}
+.paw-key.toe:active {
+  transform: scale(.92);
+  filter: brightness(.9);
+}
+
+/* key face text */
+.key-face {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  pointer-events: none;
+  position: relative; z-index: 1;
+  text-shadow: 0 1px 2px rgba(0,0,0,.6);
+}
+
+/* Special key tints */
+.key-del  { background: radial-gradient(circle at 38% 30%, #3a1e2a, #2a1520) !important; }
+.key-del .key-face { color: var(--accent2); }
+.key-del:hover { border-color: var(--accent2) !important; }
+
+.key-clear { background: radial-gradient(circle at 38% 30%, #1e2a3a, #152030) !important; }
+.key-clear .key-face { color: #60a8e0; }
+
+.key-neg .key-face  { color: var(--text-muted); }
+.key-dot .key-face  { color: var(--accent); font-size: 1.3rem; }
+
+.key-enter {
+  background: radial-gradient(circle at 38% 30%,
+    color-mix(in srgb, var(--accent) 30%, #1a1a28),
+    color-mix(in srgb, var(--accent) 15%, #1a1a28)
+  ) !important;
+  border-color: var(--accent) !important;
+}
+.key-enter .key-face { color: var(--accent); font-size: 1.2rem; }
+.key-enter:hover { filter: brightness(1.35); }
+
+/* ── Palm (big center pad) ─────────────────────────────── */
+.paw-palm-wrap {
+  /* 3D shadow for the big pad — deeper */
+  border-radius: 50% 50% 48% 48% / 44% 44% 56% 56%;
+  box-shadow:
+    0 8px 0 rgba(0,0,0,.6),
+    0 12px 24px rgba(0,0,0,.4),
+    inset 0 -4px 8px rgba(0,0,0,.3);
+  transition: box-shadow .1s, transform .1s;
+}
+.paw-palm-wrap:active {
+  box-shadow: 0 3px 0 rgba(0,0,0,.6), 0 5px 10px rgba(0,0,0,.3);
+  transform: translateY(5px);
+}
+
+.paw-key.palm {
+  width: 90px; height: 80px;
+  border-radius: 50% 50% 48% 48% / 44% 44% 56% 56%;
+  background: radial-gradient(ellipse at 40% 30%, #302e48, #1a1828);
+  border: 2px solid var(--border);
+  flex-direction: column; gap: 4px;
+}
+[data-theme="light"] .paw-key.palm {
+  background: radial-gradient(ellipse at 40% 30%, #ddd8ce, #c8c2b6);
+}
+.paw-key.palm:hover {
+  border-color: var(--accent);
+  filter: brightness(1.2);
+}
+.paw-key.palm:active { transform: scale(.94); }
+
+.palm-face {
+  font-size: 1.9rem !important;
+  letter-spacing: -.02em;
+}
+.palm-shine {
+  position: absolute;
+  top: 8%; left: 18%; right: 18%;
+  height: 32%;
+  background: radial-gradient(ellipse, rgba(255,255,255,.12) 0%, transparent 80%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* ── Key press animation ──────────────────────────────── */
+@keyframes pawBounce {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(.85); }
+  65%  { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+.paw-key.tapped { animation: pawBounce .2s ease forwards; }
+
+/* ── Ripple on tap ────────────────────────────────────── */
+.paw-ripple {
+  position: absolute;
+  border-radius: 50%;
+  width: 10px; height: 10px;
+  background: rgba(240,192,64,.5);
+  transform: translate(-50%, -50%) scale(0);
+  animation: rippleOut .4s ease-out forwards;
+  pointer-events: none;
+  z-index: 10;
+}
+@keyframes rippleOut {
+  to { transform: translate(-50%, -50%) scale(8); opacity: 0; }
+}
+
+/* ── Purr footer ──────────────────────────────────────── */
+.numpad-purr {
+  text-align: center;
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  color: var(--text-dim);
+  letter-spacing: .14em;
+  animation: purrPulse 2s ease-in-out infinite;
+}
+@keyframes purrPulse {
+  0%,100% { opacity: .3; }
+  50%      { opacity: 1; }
+}
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 640px) {
+  .numpad-overlay {
+    right: 50%;
+    bottom: 16px;
+    transform: translateX(50%) translateY(30px) scale(.92);
+    transform-origin: bottom center;
+  }
+  .numpad-overlay.open { transform: translateX(50%) translateY(0) scale(1); }
+  .numpad-lbl { display: none; }
+}
