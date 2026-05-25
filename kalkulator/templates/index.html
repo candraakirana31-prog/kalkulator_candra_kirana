@@ -13,14 +13,26 @@
   <!-- ── Header ─────────────────────────────────────────── -->
   <header class="site-header">
     <div class="logo">
-      <span class="cat-icon">🐈‍⬛</span>
+      <span class="cat-icon">𝄞</span>
       <span class="logo-text">BLACK<em>CAT</em></span>
       <span class="logo-sub">Calculator</span>
     </div>
-    <button class="theme-toggle" id="themeToggle" title="Toggle theme">
-      <span class="icon-sun">☀</span>
-      <span class="icon-moon">☽</span>
-    </button>
+    <div class="header-right">
+      <button class="numpad-toggle-btn" id="numpadToggle" title="Cat Paw Numpad">
+        <svg class="paw-svg" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="25" cy="32" rx="11" ry="9" fill="currentColor"/>
+          <ellipse cx="11" cy="24" rx="5.5" ry="4.5" fill="currentColor"/>
+          <ellipse cx="19" cy="16" rx="5" ry="4.5" fill="currentColor"/>
+          <ellipse cx="31" cy="16" rx="5" ry="4.5" fill="currentColor"/>
+          <ellipse cx="39" cy="24" rx="5.5" ry="4.5" fill="currentColor"/>
+        </svg>
+        <span class="numpad-lbl">Numpad</span>
+      </button>
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+        <span class="icon-sun">☀</span>
+        <span class="icon-moon">☽</span>
+      </button>
+    </div>
   </header>
 
   <!-- ── Tab Navigation ─────────────────────────────────── -->
@@ -33,19 +45,15 @@
 
   <main class="main-layout">
 
-    <!-- ════════════════════════════════════════════════════
-         TAB: ARITMATIKA
-    ═══════════════════════════════════════════════════════ -->
+    <!-- TAB: ARITMATIKA -->
     <section class="tab-panel active" id="tab-arithmetic">
       <div class="panel-grid">
         <div class="card input-card">
           <h2 class="card-title"><span class="num">01</span> Operasi Aritmatika</h2>
-
           <div class="form-group">
             <label>Operand A</label>
             <input type="number" id="arith-a" placeholder="Masukkan angka..." />
           </div>
-
           <div class="op-grid">
             <button class="op-btn active" data-op="add">+</button>
             <button class="op-btn" data-op="sub">−</button>
@@ -56,15 +64,12 @@
             <button class="op-btn" data-op="mod">mod</button>
             <button class="op-btn" data-op="floordiv">//</button>
           </div>
-
           <div class="form-group" id="arith-b-group">
             <label>Operand B</label>
             <input type="number" id="arith-b" placeholder="Masukkan angka..." />
           </div>
-
           <button class="calc-btn" id="arith-calc">Hitung →</button>
         </div>
-
         <div class="card result-card">
           <div class="result-display" id="arith-result-display">
             <span class="result-placeholder">Hasil muncul di sini</span>
@@ -75,19 +80,15 @@
       </div>
     </section>
 
-    <!-- ════════════════════════════════════════════════════
-         TAB: LOGIKA / BITWISE
-    ═══════════════════════════════════════════════════════ -->
+    <!-- TAB: LOGIKA / BITWISE -->
     <section class="tab-panel" id="tab-logic">
       <div class="panel-grid">
         <div class="card input-card">
           <h2 class="card-title"><span class="num">02</span> Operator Logika &amp; Bitwise</h2>
-
           <div class="form-group">
             <label>Operand A (bilangan bulat)</label>
             <input type="number" id="logic-a" placeholder="contoh: 12" step="1" />
           </div>
-
           <div class="op-grid">
             <button class="op-btn active" data-op="and">AND</button>
             <button class="op-btn" data-op="or">OR</button>
@@ -96,15 +97,12 @@
             <button class="op-btn" data-op="nand">NAND</button>
             <button class="op-btn" data-op="nor">NOR</button>
           </div>
-
           <div class="form-group" id="logic-b-group">
             <label>Operand B (bilangan bulat)</label>
             <input type="number" id="logic-b" placeholder="contoh: 10" step="1" />
           </div>
-
           <button class="calc-btn" id="logic-calc">Hitung →</button>
         </div>
-
         <div class="card result-card">
           <div class="result-display" id="logic-result-display">
             <span class="result-placeholder">Hasil muncul di sini</span>
@@ -115,17 +113,13 @@
       </div>
     </section>
 
-    <!-- ════════════════════════════════════════════════════
-         TAB: KONVERSI
-    ═══════════════════════════════════════════════════════ -->
+    <!-- TAB: KONVERSI -->
     <section class="tab-panel" id="tab-convert">
       <div class="convert-tabs">
         <button class="conv-tab active" data-conv="base">Basis Bilangan</button>
         <button class="conv-tab" data-conv="temperature">Suhu</button>
         <button class="conv-tab" data-conv="currency">Mata Uang</button>
       </div>
-
-      <!-- Base Conversion -->
       <div class="conv-panel active" id="conv-base">
         <div class="panel-grid">
           <div class="card input-card">
@@ -163,8 +157,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Temperature Conversion -->
       <div class="conv-panel" id="conv-temperature">
         <div class="panel-grid">
           <div class="card input-card">
@@ -202,8 +194,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Currency Conversion -->
       <div class="conv-panel" id="conv-currency">
         <div class="panel-grid">
           <div class="card input-card">
@@ -252,13 +242,9 @@
       </div>
     </section>
 
-    <!-- ════════════════════════════════════════════════════
-         TAB: FAKTORIAL & FIBONACCI
-    ═══════════════════════════════════════════════════════ -->
+    <!-- TAB: FAKTORIAL & FIBONACCI -->
     <section class="tab-panel" id="tab-fibonacci">
       <div class="panel-grid two-col">
-
-        <!-- Factorial -->
         <div class="card input-card">
           <h2 class="card-title"><span class="num">04a</span> Faktorial</h2>
           <div class="form-group">
@@ -270,8 +256,6 @@
           <div class="formula-box" id="fact-formula"></div>
           <div class="steps-box" id="fact-steps"></div>
         </div>
-
-        <!-- Fibonacci -->
         <div class="card input-card">
           <h2 class="card-title"><span class="num">04b</span> Deret Fibonacci</h2>
           <div class="form-group">
@@ -287,7 +271,7 @@
       </div>
     </section>
 
-    <!-- ── History Panel ─────────────────────────────────── -->
+    <!-- History Panel -->
     <aside class="history-panel">
       <div class="history-header">
         <h3>Riwayat <span id="hist-count">0</span></h3>
@@ -304,6 +288,146 @@
     <span>Black Cat Calculator · Pengantar Pemrograman · 2025/2026</span>
   </footer>
 
+  <!-- ══════════════════════════════════════════════════════
+       CAT PAW NUMPAD (floating panel)
+  ══════════════════════════════════════════════════════ -->
+  <div class="numpad-overlay" id="numpadOverlay" role="dialog" aria-label="Cat Paw Numpad">
+    <div class="numpad-panel">
+
+      <div class="numpad-header">
+        <div class="numpad-title">
+          <svg class="paw-svg-sm" viewBox="0 0 50 50" fill="none">
+            <ellipse cx="25" cy="32" rx="11" ry="9" fill="currentColor"/>
+            <ellipse cx="11" cy="24" rx="5.5" ry="4.5" fill="currentColor"/>
+            <ellipse cx="19" cy="16" rx="5" ry="4.5" fill="currentColor"/>
+            <ellipse cx="31" cy="16" rx="5" ry="4.5" fill="currentColor"/>
+            <ellipse cx="39" cy="24" rx="5.5" ry="4.5" fill="currentColor"/>
+          </svg>
+          Cat Paw Numpad
+        </div>
+        <div class="numpad-header-right">
+          <button class="sound-toggle" id="soundToggle" title="Toggle suara">🔊</button>
+          <button class="numpad-close" id="numpadClose">✕</button>
+        </div>
+      </div>
+
+      <!-- Mini display -->
+      <div class="numpad-display" id="numpadDisplay">
+        <span class="numpad-hint">klik input dulu...</span>
+      </div>
+      <div class="numpad-target-label" id="numpadTargetLabel">— belum ada input aktif —</div>
+
+      <!-- 3D Paw keyboard layout -->
+      <div class="paw-keyboard">
+
+        <!-- Row 0: top toes -->
+        <div class="paw-row paw-row-toes">
+          <div class="key-wrap">
+            <button class="paw-key toe" data-val="7">
+              <span class="key-face">7</span>
+            </button>
+          </div>
+          <div class="key-wrap">
+            <button class="paw-key toe" data-val="8">
+              <span class="key-face">8</span>
+            </button>
+          </div>
+          <div class="key-wrap">
+            <button class="paw-key toe" data-val="9">
+              <span class="key-face">9</span>
+            </button>
+          </div>
+          <div class="key-wrap">
+            <button class="paw-key toe key-del" data-val="backspace">
+              <span class="key-face">⌫</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Row 1 -->
+        <div class="paw-row paw-row-mid">
+          <div class="key-wrap">
+            <button class="paw-key toe" data-val="4">
+              <span class="key-face">4</span>
+            </button>
+          </div>
+          <div class="key-wrap">
+            <button class="paw-key toe" data-val="5">
+              <span class="key-face">5</span>
+            </button>
+          </div>
+          <div class="key-wrap">
+            <button class="paw-key toe" data-val="6">
+              <span class="key-face">6</span>
+            </button>
+          </div>
+          <div class="key-wrap">
+            <button class="paw-key toe key-clear" data-val="clear">
+              <span class="key-face">C</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Row 2: palm area -->
+        <div class="paw-row paw-row-palm">
+          <!-- Left toes -->
+          <div class="paw-col-side">
+            <div class="key-wrap">
+              <button class="paw-key toe" data-val="1">
+                <span class="key-face">1</span>
+              </button>
+            </div>
+            <div class="key-wrap">
+              <button class="paw-key toe" data-val="2">
+                <span class="key-face">2</span>
+              </button>
+            </div>
+            <div class="key-wrap">
+              <button class="paw-key toe" data-val="3">
+                <span class="key-face">3</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Central palm -->
+          <div class="paw-palm-wrap">
+            <button class="paw-key palm" data-val="0">
+              <span class="key-face palm-face">0</span>
+              <span class="palm-shine"></span>
+            </button>
+          </div>
+
+          <!-- Right toes -->
+          <div class="paw-col-side">
+            <div class="key-wrap">
+              <button class="paw-key toe key-neg" data-val="negate">
+                <span class="key-face">±</span>
+              </button>
+            </div>
+            <div class="key-wrap">
+              <button class="paw-key toe key-dot" data-val=".">
+                <span class="key-face">.</span>
+              </button>
+            </div>
+            <div class="key-wrap">
+              <button class="paw-key toe key-enter" data-val="enter">
+                <span class="key-face">↵</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /paw-keyboard -->
+
+      <!-- Purr footer -->
+      <div class="numpad-purr">
+        <span id="purrText">zzz...</span>
+      </div>
+
+    </div><!-- /numpad-panel -->
+  </div><!-- /numpad-overlay -->
+
+  <script src="{{ url_for('static', filename='js/numpad.js') }}"></script>
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
